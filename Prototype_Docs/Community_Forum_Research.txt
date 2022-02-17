@@ -1,0 +1,13 @@
+Topic: Community Forum
+Found technology: Vanilla, Misago, POPForums, Comet
+
+1. Almost all of the technologies seems to provide the sort of functionality that we might want for this project. The standouts would be Vanilla, and Misago. The other two seem more bare bones.
+2. Almost all of these came with a free license for use. Vanilla, POPForums, and Misago all came with the GNU license. Comets License was more complicated.
+3. Vanilla	 | 	Misago	 | 	POPForums	 | 	Comet	 
+   MacOS-Docker  | Linux-Docker  | Wind/Lin-Docker/Azure | Linux-Docker
+   PHP based     | Python Based  | C# based              | JS Based
+4. Yes           | No            | Maybe                 | No
+   Freq. updates | No updates    | Unfreq. updates       | Unfreq. updates
+   Good Community| Small Commun. | Small Community       | Small Community
+5. Good Docs     | Good Docs     | Okay Docs             | Bad Docs
+6. Easy to use   | Easy to use   | Medium Difficulty     | Might have Issues
