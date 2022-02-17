@@ -6,7 +6,7 @@ Found technology: Vanilla, Misago, POPForums, Comet
 3. Vanilla	 | 	Misago	 | 	POPForums	 | 	Comet	 
    MacOS-Docker  | Linux-Docker  | Wind/Lin-Docker/Azure | Linux-Docker
    PHP based     | Python Based  | C# based              | JS Based
-4. Yes           | No            | Maybe                 | No
+4. Yes           | No            | Maybe                 | No          (Well used and active?)
    Freq. updates | No updates    | Unfreq. updates       | Unfreq. updates
    Good Community| Small Commun. | Small Community       | Small Community
 5. Good Docs     | Good Docs     | Okay Docs             | Bad Docs
