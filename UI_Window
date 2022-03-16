@@ -1,0 +1,40 @@
+from tkinter import *
+import easyocr
+import webbrowser
+import threading
+
+#Create an instance of tkinter window or frame
+win = Tk()
+
+#Setting the geometry of window
+win.geometry("600x350")
+
+#Create a Label
+Label(win, text= "Hello World! ",font=('Helvetica bold', 15)).pack(pady=20)
+
+#Make the window jump above all
+win.attributes('-topmost',True)
+
+def helloCall():
+    print("waiting for match...")
+    # make this function a new thread so the window is usable while searching for a match
+    #x = threading.Thread(target = findingMatchFunction, args = ())
+    reader = easyocr.Reader(['en'])
+    result = reader.readtext('bind.jpg', detail = 0)
+
+    print(result)
+
+def goToSite():
+    print("redirecting to site...")
+    webbrowser.open("http://youtube.com", new=1)
+
+findingMatchButton = Button(win, text = "finding a match!", fg = "red",
+                      command = helloCall)
+findingMatchButton.pack()
+
+moreInfo = Button(win, text = "click for our website", fg = "black",
+                      command = goToSite)
+moreInfo.pack()
+
+
+win.mainloop()
