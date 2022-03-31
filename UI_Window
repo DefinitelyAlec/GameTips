@@ -15,26 +15,52 @@ Label(win, text= "Hello World! ",font=('Helvetica bold', 15)).pack(pady=20)
 #Make the window jump above all
 win.attributes('-topmost',True)
 
-def helloCall():
+maps = ["ASCENT", "BIND", "BREEZE", "HAVEN", "ICEBOX", "SPLIT"]
+
+def findMatch():
+    cancelSearchButton["state"] = "active"
+    findingMatchButton["state"] = "disabled"
+    x = threading.Thread(target = ocrStuff, args = ())
+    x.start()
+
+def ocrStuff():
     print("waiting for match...")
-    # make this function a new thread so the window is usable while searching for a match
-    #x = threading.Thread(target = findingMatchFunction, args = ())
     reader = easyocr.Reader(['en'])
     result = reader.readtext('bind.jpg', detail = 0)
 
+    for res in result:
+        for map in maps:
+            if res == map:
+                result = map
+                break
+
     print(result)
+    cancelSearchButton["state"] = "disabled" 
+    findingMatchButton["state"] = "active"
+    return result
 
 def goToSite():
     print("redirecting to site...")
     webbrowser.open("http://youtube.com", new=1)
 
-findingMatchButton = Button(win, text = "finding a match!", fg = "red",
-                      command = helloCall)
+def cancelMatch():
+    print("cancelling match")
+    cancelSearchButton["state"] = "disabled" 
+    findingMatchButton["state"] = "active"
+    #TODO: actually kill the thread
+
+
+findingMatchButton = Button(win, text = "finding a match!", fg = "green",
+                      command = findMatch)
 findingMatchButton.pack()
 
-moreInfo = Button(win, text = "click for our website", fg = "black",
+moreInfoButton = Button(win, text = "click for our website", fg = "black",
                       command = goToSite)
-moreInfo.pack()
+moreInfoButton.pack()
 
+cancelSearchButton = Button(win, text = "cancel search", fg = "red",
+                      command = cancelMatch)
+cancelSearchButton.pack()
+cancelSearchButton["state"] = "disabled"
 
 win.mainloop()
