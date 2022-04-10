@@ -23,13 +23,18 @@ webSiteLink.set("https://utah.instructure.com/groups/425595")
 win.attributes('-topmost',True)
 
 #TODO: don't hardcode, read in as option from game database
-connection = psycopg2.connect(user="misago", password="misago", host="127.0.0.1", port="5432", database="misago")
-cursor = connection.cursor()
-cursor.execute("select * from Valorant_Map_Table")
-maps = []
-for value in cursor.fetchall():
-    maps.append(value[0])
-print(maps)
+try:
+    connection = psycopg2.connect(user="misago", password="misago", host="127.0.0.1", port="5432", database="misago")
+    cursor = connection.cursor()
+    cursor.execute("select * from Valorant_Map_Table")
+    maps = []
+    for value in cursor.fetchall():
+        maps.append(value[0])
+    cursor.close()
+    connection.close()
+except:
+    print("Failed to connect to Database.")
+
 
 def ocrStuff():
     #Initialize stuff
@@ -53,6 +58,15 @@ def ocrStuff():
     cancelSearchButton["state"] = "disabled"
     findingMatchButton["state"] = "active"
     titleText.set("Map found: " + result)
+    try:
+        connection = psycopg2.connect(user="misago", password="misago", host="127.0.0.1", port="5432", database="misago")
+        cursor = connection.cursor()
+        cursor.execute("select tipID, content from Tip_Table where mapName = \'" + result + "\'")
+        print(cursor.fetchall())
+        cursor.close()
+        connection.close()
+    except:
+        print("Failed to connect to database.")
     return result
 
 
