@@ -2,6 +2,7 @@ from tkinter import *
 import easyocr
 import webbrowser
 import threading
+import psycopg2
 
 #Create an instance of tkinter window or frame
 win = Tk()
@@ -22,7 +23,10 @@ webSiteLink.set("https://utah.instructure.com/groups/425595")
 win.attributes('-topmost',True)
 
 #TODO: don't hardcode, read in as option from game database
-maps = ["ASCENT", "BIND", "BREEZE", "HAVEN", "ICEBOX", "SPLIT"]
+connection = psycopg2.connect(user="misago", password="misago", host="127.0.0.1", port="5432", database="misago")
+cursor = connection.cursor()
+cursor.execute("select * from Valorant_Map_Table")
+maps = cursor.fetchall()
 
 def ocrStuff():
     #Initialize stuff
