@@ -26,7 +26,10 @@ win.attributes('-topmost',True)
 connection = psycopg2.connect(user="misago", password="misago", host="127.0.0.1", port="5432", database="misago")
 cursor = connection.cursor()
 cursor.execute("select * from Valorant_Map_Table")
-maps = cursor.fetchall()
+maps = []
+for value in cursor.fetchall():
+    maps.append(value[0])
+print(maps)
 
 def ocrStuff():
     #Initialize stuff
