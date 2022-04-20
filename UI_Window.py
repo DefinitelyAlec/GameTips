@@ -7,6 +7,25 @@ import pyautogui
 import numpy as np
 from PIL import Image, ImageTk, ImageGrab
 
+def connectAndQuery(query):
+    #Database stuff
+    listToReturn = None
+    try:
+        print("Connected.")
+        connection = psycopg2.connect(user="anyone", password="teamgametips",\
+             host = "database-1.cgpwhtgqxogz.us-west-1.rds.amazonaws.com", port = 5432, database = "teamgametipsdb")
+        cursor = connection.cursor()
+
+        cursor.execute(query)
+        listToReturn = cursor.fetchall()
+        if connection:
+            print("Closing connection.")
+            cursor.close()
+            connection.close()
+    except:
+        print("Database failure.")
+    return listToReturn
+
 #Create an instance of tkinter window or frame
 win = Tk()
 
@@ -30,7 +49,9 @@ global canvas
 canvas = Canvas(win, width = 1000, height = 100)
 
 #TODO: don't hardcode, read in as option from game database
-maps = ["ASCENT", "BIND", "BREEZE", "HAVEN", "ICEBOX", "SPLIT"]
+maps = []
+for value in connectAndQuery("SELECT * FROM Valorant_Map_Table"):
+    maps.append(value[0])
 
 def screenshot():
     global img
@@ -45,18 +66,6 @@ def screenshot():
     canvas.create_image(10,10,anchor = NW, image = img)
 
 
-def connect():
-    #Database stuff
-    connection = psycopg2.connect(user="misago", password="misago", host = "127.0.0.1", port = 5432, database = "misago")
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT * FROM test_table")
-    print(cursor.fetchall())
-    if connection:
-        print("Connected.")
-        cursor.close()
-        connection.close()
-
 def ocrStuff():
     global img
     #Initialize stuff
@@ -65,6 +74,7 @@ def ocrStuff():
 
     #Search until we find a map
     foundMap = False 
+    
     while not foundMap:
         print("map not found, looping")
         img = pyautogui.screenshot()
@@ -83,6 +93,7 @@ def ocrStuff():
     cancelSearchButton["state"] = "disabled"
     findingMatchButton["state"] = "active"
     titleText.set("Map found: " + result)
+    
     return result
 
 
