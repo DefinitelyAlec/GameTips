@@ -35,6 +35,8 @@ win.geometry("600x350")
 #Create a Label
 titleText = StringVar() # this datatype is from tkinter
 titleText.set("Welcome to Intuitive Intel!")
+tipText = StringVar()
+tipText.set("")
 Label(win, textvariable = titleText,font=('Helvetica bold', 15)).pack(pady=20)
 
 #Create our website
@@ -66,6 +68,12 @@ def screenshot():
     canvas.create_image(10,10,anchor = NW, image = img)
 
 
+def getTip(mapName):
+    listOfTips = connectAndQuery("SELECT content, userid FROM tip_table WHERE mapname = '" + mapName + "'")
+    # TODO: Change up how we are selecting a tip.
+    return listOfTips.pop()[0]
+
+
 def ocrStuff():
     global img
     #Initialize stuff
@@ -74,27 +82,29 @@ def ocrStuff():
 
     #Search until we find a map
     foundMap = False 
+    resultMap = None
     
     while not foundMap:
         print("map not found, looping")
         img = pyautogui.screenshot()
         numpyVersion = np.array(img)
-        result = reader.readtext(numpyVersion, detail = 0)
-        for res in result:
+        readerResult = reader.readtext(numpyVersion, detail = 0)
+        print(type(readerResult))
+        for text in readerResult:
             for map in maps:
-                if res == map:
+                if text == map:
                     foundMap = True
-                    result = map
+                    resultMap = map
                     break
         if thread._is_stopped:
             print("thread successfully cancelled")
             return
-    print(result)
+    print(resultMap)
     cancelSearchButton["state"] = "disabled"
     findingMatchButton["state"] = "active"
-    titleText.set("Map found: " + result)
+    titleText.set("Map found: " + resultMap + "\nTip: " + getTip(resultMap))
     
-    return result
+    return resultMap
 
 
 def findMatch():
