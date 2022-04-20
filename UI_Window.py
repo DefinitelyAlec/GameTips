@@ -89,7 +89,6 @@ def ocrStuff():
         img = pyautogui.screenshot()
         numpyVersion = np.array(img)
         readerResult = reader.readtext(numpyVersion, detail = 0)
-        print(type(readerResult))
         for text in readerResult:
             for map in maps:
                 if text == map:
