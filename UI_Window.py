@@ -3,6 +3,9 @@ import easyocr
 import webbrowser
 import threading
 import psycopg2
+import pyautogui
+import numpy as np
+from PIL import Image, ImageTk, ImageGrab
 
 #Create an instance of tkinter window or frame
 win = Tk()
@@ -22,21 +25,40 @@ webSiteLink.set("https://utah.instructure.com/groups/425595")
 #Make the window jump above all
 win.attributes('-topmost',True)
 
-#TODO: don't hardcode, read in as option from game database
-try:
-    connection = psycopg2.connect(user="misago", password="misago", host="127.0.0.1", port="5432", database="misago")
-    cursor = connection.cursor()
-    cursor.execute("select * from Valorant_Map_Table")
-    maps = []
-    for value in cursor.fetchall():
-        maps.append(value[0])
-    cursor.close()
-    connection.close()
-except:
-    print("Failed to connect to Database.")
+global img
+global canvas
+canvas = Canvas(win, width = 1000, height = 100)
 
+#TODO: don't hardcode, read in as option from game database
+maps = ["ASCENT", "BIND", "BREEZE", "HAVEN", "ICEBOX", "SPLIT"]
+
+def screenshot():
+    global img
+    global canvas
+    #display code, not screenshot
+    # display image(s)
+    canvas.pack_forget() # it stacks and falls lower and lower without this
+    canvas = Canvas(win, width = 1920, height = 1080)
+    canvas.pack()
+    img = pyautogui.screenshot()
+    img = ImageTk.PhotoImage(img)
+    canvas.create_image(10,10,anchor = NW, image = img)
+
+
+def connect():
+    #Database stuff
+    connection = psycopg2.connect(user="misago", password="misago", host = "127.0.0.1", port = 5432, database = "misago")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM test_table")
+    print(cursor.fetchall())
+    if connection:
+        print("Connected.")
+        cursor.close()
+        connection.close()
 
 def ocrStuff():
+    global img
     #Initialize stuff
     print("waiting for match...")
     reader = easyocr.Reader(['en'])
@@ -44,7 +66,10 @@ def ocrStuff():
     #Search until we find a map
     foundMap = False 
     while not foundMap:
-        result = reader.readtext('bind.jpg', detail = 0)
+        print("map not found, looping")
+        img = pyautogui.screenshot()
+        numpyVersion = np.array(img)
+        result = reader.readtext(numpyVersion, detail = 0)
         for res in result:
             for map in maps:
                 if res == map:
@@ -58,15 +83,6 @@ def ocrStuff():
     cancelSearchButton["state"] = "disabled"
     findingMatchButton["state"] = "active"
     titleText.set("Map found: " + result)
-    try:
-        connection = psycopg2.connect(user="misago", password="misago", host="127.0.0.1", port="5432", database="misago")
-        cursor = connection.cursor()
-        cursor.execute("select tipID, content from Tip_Table where mapName = \'" + result + "\'")
-        print(cursor.fetchall())
-        cursor.close()
-        connection.close()
-    except:
-        print("Failed to connect to database.")
     return result
 
 
@@ -89,6 +105,7 @@ def cancelMatch():
     cancelSearchButton["state"] = "disabled" 
     findingMatchButton["state"] = "active"
 
+# add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
 findingMatchButton.pack()
@@ -102,7 +119,13 @@ cancelSearchButton = Button(win, text = "cancel search", fg = "red",
 cancelSearchButton.pack()
 cancelSearchButton["state"] = "disabled"
 
+# for testing, will put this in a loop after pressing findingMatchButton
+screenshotButton = Button(win, text = "take a screenshot", fg = "black",
+                        command = screenshot)
+screenshotButton.pack()
+
 thread = threading.Thread(target = ocrStuff, args = ())
 thread._stop = threading.Event()
 
 win.mainloop()
+exit(0)
