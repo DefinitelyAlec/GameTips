@@ -50,9 +50,9 @@ global img
 global canvas
 canvas = Canvas(win, width = 1000, height = 100)
 
-#TODO: don't hardcode, read in as option from game database
+#maps is global variable to store list of where to pull tips from
 maps = []
-for value in connectAndQuery("SELECT * FROM Valorant_Map_Table"):
+for value in connectAndQuery("SELECT * FROM Valorant_Map_Table"): #TODO: let the user tell us which game to use
     maps.append(value[0])
 
 def screenshot():
@@ -138,11 +138,6 @@ cancelSearchButton = Button(win, text = "cancel search", fg = "red",
                         command = cancelMatch)
 cancelSearchButton.pack()
 cancelSearchButton["state"] = "disabled"
-
-# for testing, will put this in a loop after pressing findingMatchButton
-screenshotButton = Button(win, text = "take a screenshot", fg = "black",
-                        command = screenshot)
-screenshotButton.pack()
 
 thread = threading.Thread(target = ocrStuff, args = ())
 thread._stop = threading.Event()
