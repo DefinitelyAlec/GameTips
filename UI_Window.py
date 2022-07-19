@@ -1,3 +1,4 @@
+
 from tkinter import *
 import easyocr
 import webbrowser
@@ -107,6 +108,8 @@ def ocrStuff():
 
 
 def findMatch():
+    matchMissedButton.pack()
+    cancelSearchButton.pack()
     global thread
     cancelSearchButton["state"] = "active"
     findingMatchButton["state"] = "disabled"
@@ -122,13 +125,32 @@ def cancelMatch():
     global thread
     print("cancelling match")
     thread._is_stopped = True
-    cancelSearchButton["state"] = "disabled" 
+    cancelSearchButton.pack_forget()
     findingMatchButton["state"] = "active"
+
+def matchFound():
+    print("oops, which map was it?")
+    drop.pack()
+    confirmMapButton.pack()
+    cancelSearchButton.pack_forget()
+    findingMatchButton["state"] = "active"
+
+def confirmMap():
+    global thread
+    print("map confirmed")
+    thread._is_stopped = True
+    drop.pack_forget()
+    confirmMapButton.pack_forget()
+    titleText.set("Map found: " + setMap.get() + "\nTip: " + getTip(setMap.get()))
+
 
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
 findingMatchButton.pack()
+
+matchMissedButton = Button(win, text = "match found!", fg = "red",
+                        command = matchFound)
 
 moreInfoButton = Button(win, text = "click for our website", fg = "black",
                         command = goToSite)
@@ -136,8 +158,14 @@ moreInfoButton.pack()
 
 cancelSearchButton = Button(win, text = "cancel search", fg = "red",
                         command = cancelMatch)
-cancelSearchButton.pack()
-cancelSearchButton["state"] = "disabled"
+
+confirmMapButton = Button(win, text = "confirm map", fg = "black",
+                          command = confirmMap)
+
+setMap = StringVar()
+setMap.set("")
+
+drop = OptionMenu(win, setMap, *maps)
 
 thread = threading.Thread(target = ocrStuff, args = ())
 thread._stop = threading.Event()
