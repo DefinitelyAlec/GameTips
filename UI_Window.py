@@ -1,4 +1,5 @@
 
+from argparse import Action
 from tkinter import *
 import easyocr
 import webbrowser
@@ -6,10 +7,108 @@ import threading
 import psycopg2
 import pyautogui
 import numpy as np
+import urllib.request
 from PIL import Image, ImageTk, ImageGrab
 
+# for any new button, pack when it should be there, and pack_forget in all others
+def setState(newState):
+    if newState == "selecting game":
+        findingMatchButton.pack_forget()
+        matchMissedButton.pack_forget()
+        moreInfoButton.pack()
+        moreInfoButton["state"] = ACTIVE
+        cancelSearchButton.pack_forget()
+        confirmMapButton.pack_forget()
+        confirmGameButton.pack()
+        confirmGameButton["state"] = DISABLED # starts disabled in this state, wait until an option is selected in dropgame via trace
+        selectGameButton.pack_forget()
+        matchOverButton.pack_forget()
+        confirmSkillLevelButton.pack_forget()
+
+        dropGame.pack()
+        dropMap.pack_forget()
+        dropSkill.pack_forget()
+        canvas.pack_forget()
+    elif newState == "waiting in menu":
+        findingMatchButton.pack()
+        findingMatchButton["state"] = ACTIVE
+        matchMissedButton.pack_forget()
+        moreInfoButton.pack()
+        moreInfoButton["state"] = ACTIVE
+        cancelSearchButton.pack_forget()
+        confirmMapButton.pack_forget()
+        confirmGameButton.pack_forget()
+        selectGameButton.pack()
+        selectGameButton["state"] = ACTIVE
+        matchOverButton.pack_forget()
+        confirmSkillLevelButton.pack()
+        confirmSkillLevelButton["state"] = DISABLED
+
+        dropGame.pack_forget()
+        dropMap.pack_forget()
+        dropSkill.pack()
+        canvas.pack_forget()
+    elif newState == "waiting in queue":
+        findingMatchButton.pack()
+        findingMatchButton["state"] = DISABLED
+        matchMissedButton.pack()
+        matchMissedButton["state"] = ACTIVE
+        moreInfoButton.pack()
+        moreInfoButton["state"] = ACTIVE
+        cancelSearchButton.pack()
+        cancelSearchButton["state"] = ACTIVE
+        confirmMapButton.pack_forget()
+        confirmGameButton.pack_forget()
+        selectGameButton.pack_forget()
+        matchOverButton.pack_forget()
+        confirmSkillLevelButton.pack()
+        confirmSkillLevelButton["state"] = DISABLED
+
+        dropGame.pack_forget()
+        dropMap.pack_forget()
+        dropSkill.pack()
+        canvas.pack_forget()
+    elif newState == "map missed":        
+        findingMatchButton.pack()
+        findingMatchButton["state"] = DISABLED
+        matchMissedButton.pack()
+        matchMissedButton["state"] = ACTIVE
+        moreInfoButton.pack()
+        moreInfoButton["state"] = ACTIVE
+        cancelSearchButton.pack()
+        cancelSearchButton["state"] = DISABLED
+        confirmMapButton.pack()
+        confirmMapButton["state"] = DISABLED # same deal as confirm game button
+        confirmGameButton.pack_forget()
+        selectGameButton.pack_forget()
+        matchOverButton.pack_forget()
+        confirmSkillLevelButton.pack()
+        confirmSkillLevelButton["state"] = DISABLED
+        
+        dropGame.pack_forget()
+        dropMap.pack()
+        dropSkill.pack()
+        canvas.pack_forget()
+    elif newState == "in a match":
+        findingMatchButton.pack_forget()
+        matchMissedButton.pack_forget()
+        moreInfoButton.pack()
+        moreInfoButton["state"] = ACTIVE
+        cancelSearchButton.pack_forget()
+        confirmMapButton.pack_forget()
+        confirmGameButton.pack_forget()
+        selectGameButton.pack_forget()
+        matchOverButton.pack()
+        matchOverButton["state"] = ACTIVE
+        confirmSkillLevelButton.pack_forget()
+        
+        dropGame.pack_forget()
+        dropMap.pack_forget()
+        dropSkill.pack_forget()
+        canvas.pack()
+
+# Wrapper for any query to db
 def connectAndQuery(query):
-    #Database stuff
     listToReturn = None
     try:
         print("Connected.")
@@ -42,7 +141,7 @@ Label(win, textvariable = titleText,font=('Helvetica bold', 15)).pack(pady=20)
 
 #Create our website
 webSiteLink = StringVar()
-webSiteLink.set("https://utah.instructure.com/groups/425595")
+webSiteLink.set("https://intuitiveintel.netlify.app/")
 
 #Make the window jump above all
 win.attributes('-topmost',True)
@@ -51,28 +150,46 @@ global img
 global canvas
 canvas = Canvas(win, width = 1000, height = 100)
 
-#maps is global variable to store list of where to pull tips from
+games = [] 
+for value in connectAndQuery("SELECT name FROM games"):
+    games.append(value[0])
+    
 maps = []
-for value in connectAndQuery("SELECT * FROM Valorant_Map_Table"): #TODO: let the user tell us which game to use
-    maps.append(value[0])
+maps.append("if you see this lmk bc you aren't supposed to")
 
-def screenshot():
-    global img
+def getMaps():
+    maps.clear()
+    for value in connectAndQuery("SELECT * FROM maps JOIN games ON gameid = game WHERE name(games) = \'" + setGame.get() + "\'"):
+        maps.append(value[0])
+    
+skillLevels = []
+skillLevels.append("if you see this lmk bc you aren't supposed to")
+def getSkills():
+    skillLevels.clear()
+    for value in connectAndQuery("SELECT level FROM skillLevels JOIN games ON gameid = game WHERE name = \'" + setGame.get() + "\'"):
+        skillLevels.append(value[0])
+
+def displayImage():
     global canvas
+    global img
     #display code, not screenshot
     # display image(s)
-    canvas.pack_forget() # it stacks and falls lower and lower without this
+    #canvas.pack_forget() # it stacks and falls lower and lower without this
     canvas = Canvas(win, width = 1920, height = 1080)
     canvas.pack()
-    img = pyautogui.screenshot()
+    urllib.request.urlretrieve(
+      'https://media.geeksforgeeks.org/wp-content/uploads/20210318103632/gfg-300x300.png',
+       "gfg.png")
+  
+    img = Image.open("gfg.png")
     img = ImageTk.PhotoImage(img)
     canvas.create_image(10,10,anchor = NW, image = img)
 
 
 def getTip(mapName):
-    listOfTips = connectAndQuery("SELECT content, userid FROM tip_table WHERE mapname = '" + mapName + "'")
+    listOfTips = connectAndQuery("SELECT * FROM tips JOIN maps ON map = mapid JOIN characters ON charid = character WHERE name(maps) = \'" + mapName + "\'")
     # TODO: Change up how we are selecting a tip.
-    return listOfTips.pop()[0]
+    return listOfTips.pop()
 
 
 def ocrStuff():
@@ -103,58 +220,83 @@ def ocrStuff():
     cancelSearchButton["state"] = "disabled"
     findingMatchButton["state"] = "active"
     titleText.set("Map found: " + resultMap + "\nTip: " + getTip(resultMap))
-    
+
+    setState("in a match")
+
     return resultMap
 
-
+# when user starts searching for a game
 def findMatch():
-    matchMissedButton.pack()
-    cancelSearchButton.pack()
+    setState("waiting in queue")
     global thread
-    cancelSearchButton["state"] = "active"
-    findingMatchButton["state"] = "disabled"
     if thread._started:
         thread = threading.Thread(target = ocrStuff, args = ())
         thread.start()
 
+# user has found a match and did not get a tip
+def matchFound():
+    print("oops, which map was it?")
+    setState("map missed")
+
+# when user goes to the site (home page by default, tip page if a tip is active)
 def goToSite():
     print("redirecting to site...")
     webbrowser.open(webSiteLink.get(), new=1)
 
+# user was searching for a match, and changed their mind
 def cancelMatch():
     global thread
     print("cancelling match")
     thread._is_stopped = True
-    cancelSearchButton.pack_forget()
-    findingMatchButton["state"] = "active"
+    setState("waiting in menu")
 
-def matchFound():
-    print("oops, which map was it?")
-    drop.pack()
-    confirmMapButton.pack()
-    cancelSearchButton.pack_forget()
-    findingMatchButton["state"] = "active"
-
+    
+# helper for above
 def confirmMap():
     global thread
     print("map confirmed")
     thread._is_stopped = True
-    drop.pack_forget()
-    confirmMapButton.pack_forget()
-    titleText.set("Map found: " + setMap.get() + "\nTip: " + getTip(setMap.get()))
+    setState("in a match")
+    result = getTip(setMap.get())
+    #TODO: make new method to handle all logic when finding a match
+    titleText.set("Map found: " + setMap.get() + "\nTip: " + result[0])
+    canvas.create_text(300, 50, text=result[1], fill="black", font=('Helvetica 12'), width = 300)
+    setState("in a match")
+
+# helper for above
+def confirmGame():
+    global dropMap
+    global dropSkill
+    getMaps()
+    getSkills()
+    dropMap = OptionMenu(win, setMap, *maps)
+    dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
+    setState("waiting in menu")
+    
+# only button on launch? User selects which game they are playing
+def selectGame():
+    print("swapping game")
+    setState("selecting game")
+
+# to limit buttons available during match
+def matchOver():
+    print("GG")
+    setState("waiting in menu")
+
+def confirmSkillLevel():
+    print("we will try to give you " + setSkillLevel.get() + " level tips")
+    confirmSkillLevelButton["state"] = DISABLED
 
 
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
-findingMatchButton.pack()
 
 matchMissedButton = Button(win, text = "match found!", fg = "red",
                         command = matchFound)
 
 moreInfoButton = Button(win, text = "click for our website", fg = "black",
                         command = goToSite)
-moreInfoButton.pack()
 
 cancelSearchButton = Button(win, text = "cancel search", fg = "red",
                         command = cancelMatch)
@@ -162,13 +304,60 @@ cancelSearchButton = Button(win, text = "cancel search", fg = "red",
 confirmMapButton = Button(win, text = "confirm map", fg = "black",
                           command = confirmMap)
 
+confirmGameButton = Button(win, text = "confirm game", fg = "black",
+                           command = confirmGame)
+
+selectGameButton = Button(win, text = "switch game", fg = "green",
+                          command = selectGame)
+
+matchOverButton = Button(win, text = "match over, clear tip", fg = "black",
+                         command = matchOver)
+
+confirmSkillLevelButton = Button(win, text = "confirm skill level", fg = "black",
+                                 command = confirmSkillLevel)
+
+# allow user to select game when app launches
+setGame = StringVar()
+setGame.set("")
+
+dropGame = OptionMenu(win, setGame, *games)
+
+# allow user to select map from a dropdown if ocr failed
 setMap = StringVar()
 setMap.set("")
 
-drop = OptionMenu(win, setMap, *maps)
+dropMap = OptionMenu(win, setMap, *maps)
 
+# allow user to select skill level from a dropdown
+setSkillLevel = StringVar()
+setSkillLevel.set("any")
+
+dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
+
+# confirm game button inactive until a game is selected
+def checkGameSelected(*args):
+    confirmGameButton["state"] = ACTIVE
+
+setGame.trace('w', checkGameSelected)
+
+# confirm map button inactive until a map is selected
+def checkMapSelected(*args):
+    confirmMapButton["state"] = ACTIVE
+
+setMap.trace('w', checkMapSelected)
+
+def checkSkillSelected(*args):
+    confirmSkillLevelButton["state"] = ACTIVE
+
+setSkillLevel.trace('w', checkSkillSelected)
+
+# allow window to accept inputs while running ocr
 thread = threading.Thread(target = ocrStuff, args = ())
 thread._stop = threading.Event()
+
+#displayImage()
+
+setState("selecting game")
 
 win.mainloop()
 exit(0)
