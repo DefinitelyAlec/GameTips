@@ -217,9 +217,12 @@ def ocrStuff():
             print("thread successfully cancelled")
             return
     print(resultMap)
+    result = getTip(resultMap)
     cancelSearchButton["state"] = "disabled"
     findingMatchButton["state"] = "active"
-    titleText.set("Map found: " + resultMap + "\nTip: " + getTip(resultMap))
+    titleText.set("Map found: " + resultMap + "\nTip: " + result[0])
+    canvas.create_text(300, 50, text=result[1], fill="black", font=('Helvetica 12'), width = 300) 
+
 
     setState("in a match")
 
