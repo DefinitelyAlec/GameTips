@@ -188,10 +188,12 @@ def connectAndQuery(query):
         listToReturn = cursor.fetchall()
         if connection:
             print("Closing connection.")
+            connection.commit()
             cursor.close()
             connection.close()
-    except:
-        print("Database failure.")
+    except Exception as error:
+        print ("Oops! An exception has occured:", error)
+        print ("Exception TYPE:", type(error))
     return listToReturn
 
 #Create an instance of tkinter window or frame
@@ -399,7 +401,7 @@ def createTip():
 def postTip():
     print("This tip will help many other gamers now :)")
     print(inputTitleStr.get())
-    connectAndQuery("INSERT INTO tips(title, explanation, character, map, skilllevel) SELECT \'" + inputTitleStr.get() + "\', \'" + inputTipTextStr.get() + "\', charid, mapid, id FROM characters c JOIN maps m ON game(c) = game(m) JOIN skilllevels s ON game(c) = game(s) WHERE name(c) = \'" + setCharacter.get() + "\' AND name(m) = \'" + setMap.get() + "\' AND level = \'" + setSkillLevel.get() + "\'")
+    print(connectAndQuery(f"INSERT INTO tips(title, explanation, character, map, skilllevel) SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', charid, mapid, id FROM characters c JOIN maps m ON game(c) = game(m) JOIN skilllevels s ON game(c) = game(s) WHERE name(c) = \'{setCharacter.get()}\' AND name(m) = \'{setMap.get()}\' AND level = \'{setSkillLevel.get()}\' RETURNING *"))
     #database stuff here
 
 def quitMakingTips():
