@@ -230,6 +230,7 @@ maps.append("invalid map option")
 def getMaps():
     setMap.trace('w', checkMapSelected)
     maps.clear()
+    maps.append("select map")
     for value in connectAndQuery("SELECT * FROM maps JOIN games ON gameid = game WHERE name(games) = \'" + setGame.get() + "\'"):
         maps.append(value[0])
     
@@ -237,6 +238,7 @@ skillLevels = []
 skillLevels.append("invalid skill option")
 def getSkills():
     skillLevels.clear()
+    skillLevels.append("select skill level")
     for value in connectAndQuery("SELECT * FROM skillLevels JOIN games ON gameid = game WHERE name = \'" + setGame.get() + "\'"):
         skillLevels.append(value[1])
 
@@ -244,6 +246,7 @@ characters = []
 characters.append("invalid character option")
 def getChars():
     characters.clear()
+    characters.append("select character")
     for value in connectAndQuery("SELECT * FROM characters JOIN games ON gameid = game WHERE name(games) = \'" + setGame.get() + "\'"):
         characters.append(value[0])
 
@@ -399,11 +402,63 @@ def createTip():
     
 # post the tip to the database
 def postTip():
-    print("This tip will help many other gamers now :)")
-    print(inputTitleStr.get())
-    print(connectAndQuery(f"INSERT INTO tips(title, explanation, character, map, skilllevel) SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', charid, mapid, id FROM characters c JOIN maps m ON game(c) = game(m) JOIN skilllevels s ON game(c) = game(s) WHERE name(c) = \'{setCharacter.get()}\' AND name(m) = \'{setMap.get()}\' AND level = \'{setSkillLevel.get()}\' RETURNING *"))
-    #database stuff here
+    print(setMap.get())
+    print(setCharacter.get())
+    charSelected = setCharacter.get() != "select character"
+    mapSelected = setMap.get() != "select map"
+    skillLevelSelected = setSkillLevel.get() != "select skill level"
 
+    print("This tip will help many other gamers now :)")
+    query = "INSERT INTO tips(title, explanation"
+    if charSelected:
+        query += ", character"
+    if mapSelected:
+        query += ", map"
+    if skillLevelSelected:
+        query += ", skilllevel"
+    query += f") SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\'"
+    if charSelected:
+        query += ", charid"
+    if mapSelected:
+        query += ", mapid"
+    if skillLevelSelected:
+        query += ", id"
+
+    if charSelected or mapSelected or skillLevelSelected:
+        query += " FROM "
+
+        if charSelected:
+            query += "characters c "
+            if mapSelected or skillLevelSelected:
+                query += "JOIN "
+        if mapSelected:
+            query += "maps m "
+            if charSelected:
+                query += "ON game(c) = game(m) "
+            if skillLevelSelected:
+                query += "JOIN "
+        if skillLevelSelected:
+            query += "skilllevels s "
+            if charSelected or mapSelected:
+                if charSelected:
+                    query += "ON game(c) = game(s) "
+                else:
+                    query += "ON game(m) = game(s) "
+        query += "WHERE "
+        if charSelected:
+            query += f"name(c) = \'{setCharacter.get()}\' "
+            if mapSelected or skillLevelSelected:
+                query += "AND "
+        if mapSelected:
+            query += f"name(m) = \'{setMap.get()}\' "
+            if skillLevelSelected:
+                query += "AND "
+        if skillLevelSelected:
+            query += f"level = \'{setSkillLevel.get()}\' "
+    query += "RETURNING *"
+
+    print(query)
+    connectAndQuery(query)
 def quitMakingTips():
     print("go get those w's")
     setState("selecting game")
