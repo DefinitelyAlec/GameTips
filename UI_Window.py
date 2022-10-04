@@ -10,6 +10,7 @@ import numpy as np
 import urllib.request
 from PIL import Image, ImageTk, ImageGrab
 
+# explicit state machine
 currState = "selecting game"
 
 # for any new button, pack when it should be there, and pack_forget in all others
@@ -58,7 +59,7 @@ def setState(newState):
         confirmSkillLevelButton["state"] = DISABLED
         confirmCharButton.pack()
         confirmCharButton["state"] = DISABLED
-        createTipButton.pack()
+        createTipButton.pack_forget()
         inputTitle.pack_forget()
         inputTipText.pack_forget()
         postTipButton.pack_forget()
@@ -83,9 +84,8 @@ def setState(newState):
         confirmGameButton.pack_forget()
         selectGameButton.pack_forget()
         matchOverButton.pack_forget()
-        confirmSkillLevelButton.pack()
-        confirmSkillLevelButton["state"] = DISABLED
-        confirmCharButton.pack()
+        confirmSkillLevelButton.pack_forget()
+        confirmCharButton.pack_forget()
         createTipButton.pack_forget()
         inputTitle.pack_forget()
         inputTipText.pack_forget()
@@ -94,7 +94,7 @@ def setState(newState):
 
         dropGame.pack_forget()
         dropMap.pack_forget()
-        dropSkill.pack()
+        dropSkill.pack_forget()
         dropCharacter.pack_forget()
         canvas.pack_forget()
 
@@ -112,9 +112,8 @@ def setState(newState):
         confirmGameButton.pack_forget()
         selectGameButton.pack_forget()
         matchOverButton.pack_forget()
-        confirmSkillLevelButton.pack()
-        confirmSkillLevelButton["state"] = DISABLED
-        confirmCharButton.pack()
+        confirmSkillLevelButton.pack_forget()
+        confirmCharButton.pack_forget()
         createTipButton.pack_forget()
         inputTitle.pack_forget()
         inputTipText.pack_forget()
@@ -123,8 +122,8 @@ def setState(newState):
         
         dropGame.pack_forget()
         dropMap.pack()
-        dropSkill.pack()
-        dropCharacter.pack()
+        dropSkill.pack_forget()
+        dropCharacter.pack_forget()
         canvas.pack_forget()
 
     elif newState == "in a match":
@@ -200,7 +199,7 @@ def connectAndQuery(query):
 win = Tk()
 
 #Setting the geometry of window
-win.geometry("600x350")
+win.geometry("800x450")
 
 #Create a Label
 titleText = StringVar() # this datatype is from tkinter
@@ -221,7 +220,7 @@ global canvas
 canvas = Canvas(win, width = 1000, height = 100)
 
 games = [] 
-games.append("invalid game option")
+games.append("select game")
 for value in connectAndQuery("SELECT name FROM games"):
     games.append(value[0])
     
@@ -275,10 +274,23 @@ def displayImage():
 
 
 def getTip(mapName):
-    listOfTips = connectAndQuery("SELECT * FROM tips JOIN maps ON map = mapid JOIN characters ON charid = character WHERE name(maps) = \'" + mapName + "\'")
+    charSelected = setCharacter.get() != "select character"
+    skillLevelSelected = setSkillLevel.get() != "select skill level"
+
+    query = "SELECT * FROM tips JOIN maps ON map = mapid "
+    if(charSelected):
+        query += "JOIN characters ON charid = character "
+    if(skillLevelSelected):
+        query+= "JOIN skilllevels ON id = skilllevel "
+    query += f"WHERE name(maps) = \'{mapName}\' "
+    if(charSelected):
+        query += f"AND name(characters) = \'{setCharacter.get()}\' "
+    if(skillLevelSelected):
+        query += f"AND level = \'{setSkillLevel.get()}\' "
+    listOfTips = connectAndQuery(query)
+    print(query)
     # TODO: Change up how we are selecting a tip.
     return listOfTips.pop()
-
 
 def ocrStuff():
     global img
@@ -402,8 +414,6 @@ def createTip():
     
 # post the tip to the database
 def postTip():
-    print(setMap.get())
-    print(setCharacter.get())
     charSelected = setCharacter.get() != "select character"
     mapSelected = setMap.get() != "select map"
     skillLevelSelected = setSkillLevel.get() != "select skill level"
@@ -456,9 +466,8 @@ def postTip():
         if skillLevelSelected:
             query += f"level = \'{setSkillLevel.get()}\' "
     query += "RETURNING *"
-
-    print(query)
     connectAndQuery(query)
+
 def quitMakingTips():
     print("go get those w's")
     setState("selecting game")
@@ -491,7 +500,7 @@ matchOverButton = Button(win, text = "match over, clear tip", fg = "black",
 confirmSkillLevelButton = Button(win, text = "confirm skill level", fg = "black",
                                  command = confirmSkillLevel)
 
-confirmCharButton = Button(win, text = "confirm character level", fg = "black",
+confirmCharButton = Button(win, text = "confirm character", fg = "black",
                                 command = confirmChar)
 
 createTipButton = Button(win, text = "create your own tip!", fg = "black",
