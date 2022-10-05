@@ -17,60 +17,40 @@ currState = "selecting game"
 def setState(newState):
     global currState
     currState = newState
+    
+    # despagghetified
+    for button in buttons:
+        button.pack_forget()
+
+        
+    dropCharacter.pack_forget()
+
     if newState == "selecting game":
-        findingMatchButton.pack_forget()
-        matchMissedButton.pack_forget()
         moreInfoButton.pack()
         moreInfoButton["state"] = ACTIVE
-        cancelSearchButton.pack_forget()
-        confirmMapButton.pack_forget()
         confirmGameButton.pack()
         confirmGameButton["state"] = DISABLED # starts disabled in this state, wait until an option is selected in dropgame via trace
-        selectGameButton.pack_forget()
-        matchOverButton.pack_forget()
-        confirmSkillLevelButton.pack_forget()
-        confirmCharButton.pack_forget()
         createTipButton.pack()
         createTipButton["state"] = DISABLED
-        inputTitle.pack_forget()
-        inputTipText.pack_forget()
-        postTipButton.pack_forget()
-        quitMakingTipsButton.pack_forget()
 
         dropGame.pack()
-        dropMap.pack_forget()
-        dropSkill.pack_forget()
-        dropCharacter.pack_forget()
-        canvas.pack_forget()
 
     elif newState == "waiting in menu":
         findingMatchButton.pack()
         findingMatchButton["state"] = ACTIVE
-        matchMissedButton.pack_forget()
         moreInfoButton.pack()
         moreInfoButton["state"] = ACTIVE
-        cancelSearchButton.pack_forget()
-        confirmMapButton.pack_forget()
-        confirmGameButton.pack_forget()
         selectGameButton.pack()
         selectGameButton["state"] = ACTIVE
-        matchOverButton.pack_forget()
         confirmSkillLevelButton.pack()
         confirmSkillLevelButton["state"] = DISABLED
         confirmCharButton.pack()
         confirmCharButton["state"] = DISABLED
-        createTipButton.pack_forget()
-        inputTitle.pack_forget()
-        inputTipText.pack_forget()
-        postTipButton.pack_forget()
-        quitMakingTipsButton.pack_forget()
 
-        dropGame.pack_forget()
-        dropMap.pack_forget()
         dropSkill.pack()
         dropCharacter.pack()
-        canvas.pack_forget()
-
+        dropSkill.pack()
+        
     elif newState == "waiting in queue":
         findingMatchButton.pack()
         findingMatchButton["state"] = DISABLED
@@ -80,23 +60,7 @@ def setState(newState):
         moreInfoButton["state"] = ACTIVE
         cancelSearchButton.pack()
         cancelSearchButton["state"] = ACTIVE
-        confirmMapButton.pack_forget()
-        confirmGameButton.pack_forget()
-        selectGameButton.pack_forget()
-        matchOverButton.pack_forget()
-        confirmSkillLevelButton.pack_forget()
-        confirmCharButton.pack_forget()
-        createTipButton.pack_forget()
-        inputTitle.pack_forget()
-        inputTipText.pack_forget()
-        postTipButton.pack_forget()
-        quitMakingTipsButton.pack_forget()
 
-        dropGame.pack_forget()
-        dropMap.pack_forget()
-        dropSkill.pack_forget()
-        dropCharacter.pack_forget()
-        canvas.pack_forget()
 
     elif newState == "map missed":        
         findingMatchButton.pack()
@@ -109,60 +73,18 @@ def setState(newState):
         cancelSearchButton["state"] = DISABLED
         confirmMapButton.pack()
         confirmMapButton["state"] = DISABLED # same deal as confirm game button
-        confirmGameButton.pack_forget()
-        selectGameButton.pack_forget()
-        matchOverButton.pack_forget()
-        confirmSkillLevelButton.pack_forget()
-        confirmCharButton.pack_forget()
-        createTipButton.pack_forget()
-        inputTitle.pack_forget()
-        inputTipText.pack_forget()
-        postTipButton.pack_forget()
-        quitMakingTipsButton.pack_forget()
-        
-        dropGame.pack_forget()
-        dropMap.pack()
-        dropSkill.pack_forget()
-        dropCharacter.pack_forget()
-        canvas.pack_forget()
 
+        dropMap.pack()
+        
     elif newState == "in a match":
-        findingMatchButton.pack_forget()
-        matchMissedButton.pack_forget()
         moreInfoButton.pack()
         moreInfoButton["state"] = ACTIVE
-        cancelSearchButton.pack_forget()
-        confirmMapButton.pack_forget()
-        confirmGameButton.pack_forget()
-        selectGameButton.pack_forget()
         matchOverButton.pack()
         matchOverButton["state"] = ACTIVE
-        confirmSkillLevelButton.pack_forget()
-        confirmCharButton.pack()
-        createTipButton.pack_forget()
-        inputTitle.pack_forget()
-        inputTipText.pack_forget()
-        postTipButton.pack_forget()
-        quitMakingTipsButton.pack_forget()
         
-        dropGame.pack_forget()
-        dropMap.pack_forget()
-        dropSkill.pack_forget()
-        dropCharacter.pack()
         canvas.pack()
 
     elif newState == "creating tip": # for now you have to select game first
-        findingMatchButton.pack_forget()
-        matchMissedButton.pack_forget()
-        moreInfoButton.pack_forget()
-        cancelSearchButton.pack_forget()
-        confirmMapButton.pack_forget()
-        confirmGameButton.pack()
-        selectGameButton.pack_forget()
-        matchOverButton.pack_forget()
-        confirmSkillLevelButton.pack_forget()
-        confirmCharButton.pack_forget()
-        createTipButton.pack_forget()
         inputTitle.pack()
         inputTipText.pack()
         postTipButton.pack()
@@ -172,8 +94,7 @@ def setState(newState):
         dropMap.pack()
         dropSkill.pack()
         dropCharacter.pack()
-        canvas.pack_forget()
-
+        
 # Wrapper for any query to db
 def connectAndQuery(query):
     listToReturn = None
@@ -288,8 +209,8 @@ def getTip(mapName):
     if(skillLevelSelected):
         query += f"AND level = \'{setSkillLevel.get()}\' "
     listOfTips = connectAndQuery(query)
-    print(query)
     # TODO: Change up how we are selecting a tip.
+    # TODO: Have fail state for if character/skill combo DNE
     return listOfTips.pop()
 
 def ocrStuff():
@@ -472,68 +393,88 @@ def quitMakingTips():
     print("go get those w's")
     setState("selecting game")
 
+buttons = []
+
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
+buttons.append(findingMatchButton)
 
 matchMissedButton = Button(win, text = "match found!", fg = "red",
                         command = matchFound)
+buttons.append(matchMissedButton)
 
 moreInfoButton = Button(win, text = "click for our website", fg = "black",
                         command = goToSite)
+buttons.append(moreInfoButton)
 
 cancelSearchButton = Button(win, text = "cancel search", fg = "red",
                         command = cancelMatch)
+buttons.append(cancelSearchButton)
 
 confirmMapButton = Button(win, text = "confirm map", fg = "black",
                           command = confirmMap)
+buttons.append(confirmMapButton)
 
 confirmGameButton = Button(win, text = "confirm game", fg = "black",
                            command = confirmGame)
+buttons.append(confirmGameButton)
 
 selectGameButton = Button(win, text = "switch game", fg = "green",
                           command = selectGame)
+buttons.append(selectGameButton)
 
 matchOverButton = Button(win, text = "match over, clear tip", fg = "black",
                          command = matchOver)
+buttons.append(matchOverButton)
 
 confirmSkillLevelButton = Button(win, text = "confirm skill level", fg = "black",
                                  command = confirmSkillLevel)
+buttons.append(confirmSkillLevelButton)
 
 confirmCharButton = Button(win, text = "confirm character", fg = "black",
                                 command = confirmChar)
+buttons.append(confirmCharButton)
 
 createTipButton = Button(win, text = "create your own tip!", fg = "black",
                          command = createTip)
+buttons.append(createTipButton)
 
 postTipButton = Button(win, text = "post tip to database!", fg = "red",
                        command = postTip)
+buttons.append(postTipButton)
 
 quitMakingTipsButton = Button(win, text = "finish making tips", fg = "black",
                              command = quitMakingTips)
+buttons.append(quitMakingTipsButton)
 
 # allow user to select game when app launches
 setGame = StringVar()
 setGame.set("select game")
 
+menus = []
 dropGame = OptionMenu(win, setGame, *games)
+menus.append(dropGame)
 
 # allow user to select map from a dropdown if ocr failed
 setMap = StringVar()
 setMap.set("select map")
 
 dropMap = OptionMenu(win, setMap, *maps)
+menus.append(dropMap)
 
 # allow user to select skill level from a dropdown
 setSkillLevel = StringVar()
 setSkillLevel.set("select skill level")
 
 dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
+menus.append(dropSkill)
 
 setCharacter = StringVar()
 setCharacter.set("select character")
 
 dropCharacter = OptionMenu(win, setCharacter, *characters)
+menus.append(dropCharacter)
 
 # confirm game button inactive until a game is selected
 def checkGameSelected(*args):
