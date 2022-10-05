@@ -91,6 +91,10 @@ def setState(newState):
         dropSkill.pack()
         dropCharacter.pack()
         
+    elif newState == "rating tip":
+        titleText.set("How good was this tip?")
+        
+
 # Wrapper for any query to db
 def connectAndQuery(query):
     listToReturn = None
@@ -404,6 +408,14 @@ def quitMakingTips():
     print("go get those w's")
     setState("selecting game")
     
+def confirmRating():
+    print("Thank you for rating this tip!")
+    confirmRatingButton["state"] = DISABLED
+    # have to get the user and tip id still
+    query = f"INSERT INTO ratings VALUES(user, setRating.get(), tip)"
+    connectAndQuery(query)
+    setState("waiting in menu")
+
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
@@ -456,6 +468,16 @@ buttons.append(postTipButton)
 quitMakingTipsButton = Button(win, text = "finish making tips", fg = "black",
                              command = quitMakingTips)
 buttons.append(quitMakingTipsButton)
+
+confirmRatingButton = Button(win, text = "confirm rating", fg = "green",
+                             command = confirmRating)
+
+ratings = [1,2,3,4,5]
+setRating = StringVar()
+setRating.set("select rating")
+
+dropRating = OptionMenu(win, setRating, *ratings)
+buttons.append(dropRating)
 
 # allow user to select game when app launches
 setGame = StringVar()
