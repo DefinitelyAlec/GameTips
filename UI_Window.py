@@ -1,4 +1,3 @@
-
 from argparse import Action
 from tkinter import *
 import easyocr
@@ -15,15 +14,13 @@ currState = "selecting game"
 
 # for any new button, pack when it should be there, and pack_forget in all others
 def setState(newState):
+    global titleText
     global currState
     currState = newState
     
     # despagghetified
     for button in buttons:
         button.pack_forget()
-
-        
-    dropCharacter.pack_forget()
 
     if newState == "selecting game":
         moreInfoButton.pack()
@@ -36,6 +33,7 @@ def setState(newState):
         dropGame.pack()
 
     elif newState == "waiting in menu":
+        titleText.set(f"Good luck in {setGame.get()}")
         findingMatchButton.pack()
         findingMatchButton["state"] = ACTIVE
         moreInfoButton.pack()
@@ -60,7 +58,6 @@ def setState(newState):
         moreInfoButton["state"] = ACTIVE
         cancelSearchButton.pack()
         cancelSearchButton["state"] = ACTIVE
-
 
     elif newState == "map missed":        
         findingMatchButton.pack()
@@ -90,7 +87,6 @@ def setState(newState):
         postTipButton.pack()
         quitMakingTipsButton.pack()
         
-        dropGame.pack()
         dropMap.pack()
         dropSkill.pack()
         dropCharacter.pack()
@@ -122,11 +118,11 @@ win = Tk()
 #Setting the geometry of window
 win.geometry("800x450")
 
+buttons = []
+
 #Create a Label
 titleText = StringVar() # this datatype is from tkinter
 titleText.set("Welcome to Intuitive Intel!")
-tipText = StringVar()
-tipText.set("")
 Label(win, textvariable = titleText,font=('Helvetica bold', 15)).pack(pady=20)
 
 #Create our website
@@ -139,6 +135,7 @@ win.attributes('-topmost',True)
 global img
 global canvas
 canvas = Canvas(win, width = 1000, height = 100)
+buttons.append(canvas)
 
 games = [] 
 games.append("select game")
@@ -173,9 +170,11 @@ def getChars():
 
 inputTitleStr = StringVar()
 inputTitle = Entry(win, textvariable= inputTitleStr)
+buttons.append(inputTitle)
 
 inputTipTextStr = StringVar()
 inputTipText = Entry(win, textvariable= inputTipTextStr)
+buttons.append(inputTipText)
 
 def displayImage():
     global canvas
@@ -294,9 +293,15 @@ def confirmGame():
     getMaps()
     getSkills()
     getChars()
+    buttons.remove(dropMap)
+    buttons.remove(dropSkill)
+    buttons.remove(dropCharacter)
     dropMap = OptionMenu(win, setMap, *maps)
     dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
     dropCharacter = OptionMenu(win, setCharacter, *characters)
+    buttons.append(dropMap)
+    buttons.append(dropSkill)
+    buttons.append(dropCharacter)
     setState("waiting in menu")
     
 # only button on launch? User selects which game they are playing
@@ -328,9 +333,15 @@ def createTip():
     getMaps()
     getSkills()
     getChars()
+    buttons.remove(dropMap)
+    buttons.remove(dropSkill)
+    buttons.remove(dropCharacter)
     dropMap = OptionMenu(win, setMap, *maps)
     dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
     dropCharacter = OptionMenu(win, setCharacter, *characters)
+    buttons.append(dropMap)
+    buttons.append(dropSkill)
+    buttons.append(dropCharacter)
     setState("creating tip")
     
 # post the tip to the database
@@ -392,9 +403,7 @@ def postTip():
 def quitMakingTips():
     print("go get those w's")
     setState("selecting game")
-
-buttons = []
-
+    
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
@@ -452,29 +461,28 @@ buttons.append(quitMakingTipsButton)
 setGame = StringVar()
 setGame.set("select game")
 
-menus = []
 dropGame = OptionMenu(win, setGame, *games)
-menus.append(dropGame)
+buttons.append(dropGame)
 
 # allow user to select map from a dropdown if ocr failed
 setMap = StringVar()
 setMap.set("select map")
 
 dropMap = OptionMenu(win, setMap, *maps)
-menus.append(dropMap)
+buttons.append(dropMap)
 
 # allow user to select skill level from a dropdown
 setSkillLevel = StringVar()
 setSkillLevel.set("select skill level")
 
 dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
-menus.append(dropSkill)
+buttons.append(dropSkill)
 
 setCharacter = StringVar()
 setCharacter.set("select character")
 
 dropCharacter = OptionMenu(win, setCharacter, *characters)
-menus.append(dropCharacter)
+buttons.append(dropCharacter)
 
 # confirm game button inactive until a game is selected
 def checkGameSelected(*args):
