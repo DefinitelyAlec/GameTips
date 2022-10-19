@@ -96,6 +96,10 @@ def setState(newState):
         dropSkill.pack()
         dropCharacter.pack()
         
+    elif newState == "rating tip":
+        titleText.set("How good was this tip?")
+        
+
 # Wrapper for any query to db
 def connectAndQuery(query):
     listToReturn = None
@@ -444,6 +448,15 @@ def savePreferences():
         newPreference = "{\"Game\":\"" + setGame.get() + "\", \"SkillLevel\":\"" + setSkillLevel.get() + "\", \"Favorite Character\":\"" + setCharacter.get() +"\"}\n"
         f.write(newPreference)
 
+    
+def confirmRating():
+    print("Thank you for rating this tip!")
+    confirmRatingButton["state"] = DISABLED
+    # have to get the user and tip id still
+    query = f"INSERT INTO ratings VALUES(user, setRating.get(), tip)"
+    connectAndQuery(query)
+    setState("waiting in menu")
+
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
@@ -500,6 +513,16 @@ buttons.append(quitMakingTipsButton)
 savePreferencesButton = Button(win, text = "save as preferences", fg = "black",
                              command = savePreferences)
 buttons.append(savePreferencesButton)
+
+confirmRatingButton = Button(win, text = "confirm rating", fg = "green",
+                             command = confirmRating)
+
+ratings = [1,2,3,4,5]
+setRating = StringVar()
+setRating.set("select rating")
+
+dropRating = OptionMenu(win, setRating, *ratings)
+buttons.append(dropRating)
 
 # allow user to select game when app launches
 setGame = StringVar()
