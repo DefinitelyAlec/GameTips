@@ -1,4 +1,5 @@
 from argparse import Action
+from msilib.schema import File
 from tkinter import *
 import easyocr
 import webbrowser
@@ -8,6 +9,7 @@ import pyautogui
 import numpy as np
 import urllib.request
 from PIL import Image, ImageTk, ImageGrab
+import json
 
 # explicit state machine
 currState = "selecting game"
@@ -29,6 +31,7 @@ def setState(newState):
         confirmGameButton["state"] = DISABLED # starts disabled in this state, wait until an option is selected in dropgame via trace
         createTipButton.pack()
         createTipButton["state"] = DISABLED
+        titleText.set("Welcome to Intuitive Intel!")
 
         dropGame.pack()
 
@@ -48,6 +51,8 @@ def setState(newState):
         dropSkill.pack()
         dropCharacter.pack()
         dropSkill.pack()
+
+        savePreferencesButton.pack()
         
     elif newState == "waiting in queue":
         findingMatchButton.pack()
@@ -112,6 +117,20 @@ def connectAndQuery(query):
         print ("Exception TYPE:", type(error))
     return listToReturn
 
+def loadPreferences(game):
+    preferences = open("localPreferences.txt")
+    currGame = "not a game"
+    while currGame != game:
+        nextLine = preferences.readline()
+        if nextLine != "":
+            currLine = json.loads(nextLine)
+            currGame = currLine["Game"]
+        else:
+            return
+    setSkillLevel.set(currLine["SkillLevel"])
+    setCharacter.set(currLine["Favorite Character"])
+    
+
 #Create an instance of tkinter window or frame
 win = Tk()
 
@@ -170,10 +189,12 @@ def getChars():
 
 inputTitleStr = StringVar()
 inputTitle = Entry(win, textvariable= inputTitleStr)
+inputTitle.insert(0, "Default Tip Title")
 buttons.append(inputTitle)
 
 inputTipTextStr = StringVar()
 inputTipText = Entry(win, textvariable= inputTipTextStr)
+inputTipText.insert(0, "Default Tip Info")
 buttons.append(inputTipText)
 
 def displayImage():
@@ -290,9 +311,15 @@ def confirmGame():
     global dropMap
     global dropSkill
     global dropCharacter
+    
+    setCharacter.set("select character")
+    setSkillLevel.set("select skill level")
+
     getMaps()
     getSkills()
     getChars()
+    loadPreferences(setGame.get())
+
     buttons.remove(dropMap)
     buttons.remove(dropSkill)
     buttons.remove(dropCharacter)
@@ -403,7 +430,20 @@ def postTip():
 def quitMakingTips():
     print("go get those w's")
     setState("selecting game")
+
+def savePreferences():
+    print(f"saving {setSkillLevel.get()} and {setCharacter.get()} as favorites")
     
+    #https://stackoverflow.com/questions/4710067/how-to-delete-a-specific-line-in-a-file
+    with open("localPreferences.txt", "r") as f:
+        lines = f.readlines()
+    with open("localPreferences.txt", "w") as f:
+        for line in lines:
+            if json.loads(line)["Game"] != setGame.get():
+                f.write(line)
+        newPreference = "{\"Game\":\"" + setGame.get() + "\", \"SkillLevel\":\"" + setSkillLevel.get() + "\", \"Favorite Character\":\"" + setCharacter.get() +"\"}\n"
+        f.write(newPreference)
+
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
@@ -456,6 +496,10 @@ buttons.append(postTipButton)
 quitMakingTipsButton = Button(win, text = "finish making tips", fg = "black",
                              command = quitMakingTips)
 buttons.append(quitMakingTipsButton)
+
+savePreferencesButton = Button(win, text = "save as preferences", fg = "black",
+                             command = savePreferences)
+buttons.append(savePreferencesButton)
 
 # allow user to select game when app launches
 setGame = StringVar()
