@@ -10,29 +10,12 @@ import numpy as np
 import urllib.request
 from PIL import Image, ImageTk, ImageGrab
 import json
-
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-# This access scope grants read-only access to the authenticated user's Drive
-# account.
-CLIENT_SECRETS_FILE = 'client_secret.json'
-SCOPES = ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
-API_SERVICE_NAME = 'oauth2'
-API_VERSION = 'v2'
-
-def get_authenticated_service():
-    flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
-    credentials = flow.run_local_server(host='localhost',
-        port=8080, 
-        authorization_prompt_message='Please visit this URL: {url}', 
-        success_message='The auth flow is complete; you may close this window.',
-        open_browser=True)
-    return build(API_SERVICE_NAME, API_VERSION, credentials = credentials)
-service = get_authenticated_service()
-user = service.userinfo().get().execute()
 # explicit state machine
 currState = "selecting game"
+loggedInUser = None
 
 # for any new button, pack when it should be there, and pack_forget in all others
 def setState(newState):
@@ -51,6 +34,11 @@ def setState(newState):
         confirmGameButton["state"] = DISABLED # starts disabled in this state, wait until an option is selected in dropgame via trace
         createTipButton.pack()
         createTipButton["state"] = DISABLED
+        loginButton.pack()
+        if loggedInUser != None:
+            loginButton["state"] = DISABLED
+        else:
+            loginButton["state"] = ACTIVE
         titleText.set("Welcome to Intuitive Intel!")
 
         dropGame.pack()
@@ -153,7 +141,37 @@ def loadPreferences(game):
             return
     setSkillLevel.set(currLine["SkillLevel"])
     setCharacter.set(currLine["Favorite Character"])
-    
+
+def get_authenticated_login_service():
+    CLIENT_SECRETS_FILE = 'client_secret.json'
+    SCOPES = ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
+    API_SERVICE_NAME = 'oauth2'
+    API_VERSION = 'v2'
+    flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+    credentials = flow.run_local_server(host='localhost',
+        port=8080, 
+        authorization_prompt_message='Please visit this URL: {url}', 
+        success_message='The auth flow is complete; you may close this window.',
+        open_browser=True)
+    return build(API_SERVICE_NAME, API_VERSION, credentials = credentials)
+
+def loginHelper():
+    service = get_authenticated_login_service()
+    googleUser = service.userinfo().get().execute()
+    possibleUser = connectAndQuery(f"SELECT * FROM users WHERE email = \'" + googleUser["email"] + "\'")
+    if possibleUser != None and len(possibleUser) > 0:
+        global loggedInUser
+        loggedInUser = possibleUser[0]
+    else: 
+        print("No account found with that email.")
+    setState("selecting game")
+
+def login():
+    global thread
+    if thread._started:
+        thread = threading.Thread(target = loginHelper, args = (), )
+        thread.start()
+
 
 #Create an instance of tkinter window or frame
 win = Tk()
@@ -485,6 +503,10 @@ buttons.append(findingMatchButton)
 matchMissedButton = Button(win, text = "match found!", fg = "red",
                         command = matchFound)
 buttons.append(matchMissedButton)
+
+loginButton = Button(win, text = "click to login", fg = "blue",
+                        command = login)
+buttons.append(loginButton)
 
 moreInfoButton = Button(win, text = "click for our website", fg = "black",
                         command = goToSite)
