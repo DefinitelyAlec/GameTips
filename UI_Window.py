@@ -11,6 +11,26 @@ import urllib.request
 from PIL import Image, ImageTk, ImageGrab
 import json
 
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+
+# This access scope grants read-only access to the authenticated user's Drive
+# account.
+CLIENT_SECRETS_FILE = 'client_secret.json'
+SCOPES = ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
+API_SERVICE_NAME = 'oauth2'
+API_VERSION = 'v2'
+
+def get_authenticated_service():
+    flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+    credentials = flow.run_local_server(host='localhost',
+        port=8080, 
+        authorization_prompt_message='Please visit this URL: {url}', 
+        success_message='The auth flow is complete; you may close this window.',
+        open_browser=True)
+    return build(API_SERVICE_NAME, API_VERSION, credentials = credentials)
+service = get_authenticated_service()
+user = service.userinfo().get().execute()
 # explicit state machine
 currState = "selecting game"
 
