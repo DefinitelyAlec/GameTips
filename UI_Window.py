@@ -89,6 +89,8 @@ def setState(newState):
     elif newState == "in a match":
         moreInfoButton.pack()
         moreInfoButton["state"] = ACTIVE
+        confirmRatingButton.pack()
+        dropRating.pack()
         matchOverButton.pack()
         matchOverButton["state"] = ACTIVE
         
@@ -164,7 +166,6 @@ def loginHelper():
         loggedInUser = possibleUser[0]
     else: 
         print("No account found with that email.")
-    setState("selecting game")
 
 def login():
     global thread
@@ -193,6 +194,7 @@ webSiteLink.set("https://intuitiveintel.netlify.app/")
 #Make the window jump above all
 win.attributes('-topmost',True)
 
+global currTip
 global img
 global canvas
 canvas = Canvas(win, width = 1000, height = 100)
@@ -277,6 +279,7 @@ def getTip(mapName):
 
 def ocrStuff():
     global img
+    global currTip
     #Initialize stuff
     print("waiting for match...")
     reader = easyocr.Reader(['en'])
@@ -300,12 +303,11 @@ def ocrStuff():
             print("thread successfully cancelled")
             return
     print(resultMap)
-    result = getTip(resultMap)
     cancelSearchButton["state"] = "disabled"
     findingMatchButton["state"] = "active"
-    result = getTip(setMap.get())
-    titleText.set("Map found: " + resultMap + "\nTip: " + result[0])
-    canvas.create_text(300, 50, text=result[1], fill="black", font=('Helvetica 12'), width = 300)
+    currTip = getTip(setMap.get())
+    titleText.set("Map found: " + resultMap + "\nTip: " + currTip[0])
+    canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
 
     setState("in a match")
 
@@ -340,12 +342,13 @@ def cancelMatch():
 # helper for above
 def confirmMap():
     global thread
+    global currTip
     print("map confirmed")
     thread._is_stopped = True
-    result = getTip(setMap.get())
+    currTip = getTip(setMap.get())
     #TODO: make new method to handle all logic when finding a match
-    titleText.set("Map found: " + setMap.get() + "\nTip: " + result[0])
-    canvas.create_text(300, 50, text=result[1], fill="black", font=('Helvetica 12'), width = 300)
+    titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
+    canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
     setState("in a match")
 
 # helper for above
@@ -420,14 +423,14 @@ def postTip():
     skillLevelSelected = setSkillLevel.get() != "select skill level"
 
     print("This tip will help many other gamers now :)")
-    query = "INSERT INTO tips(title, explanation"
+    query = "INSERT INTO tips(title, explanation, creator"
     if charSelected:
         query += ", character"
     if mapSelected:
         query += ", map"
     if skillLevelSelected:
         query += ", skilllevel"
-    query += f") SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\'"
+    query += f") SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', {loggedInUser[0]}"
     if charSelected:
         query += ", charid"
     if mapSelected:
@@ -491,9 +494,8 @@ def confirmRating():
     print("Thank you for rating this tip!")
     confirmRatingButton["state"] = DISABLED
     # have to get the user and tip id still
-    query = f"INSERT INTO ratings VALUES(user, setRating.get(), tip)"
+    query = f"INSERT INTO ratings VALUES({loggedInUser[0]}, {setRating.get()}, {currTip[7]}) RETURNING *"
     connectAndQuery(query)
-    setState("waiting in menu")
 
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
@@ -556,8 +558,9 @@ savePreferencesButton = Button(win, text = "save as preferences", fg = "black",
                              command = savePreferences)
 buttons.append(savePreferencesButton)
 
-confirmRatingButton = Button(win, text = "confirm rating", fg = "green",
-                             command = confirmRating)
+confirmRatingButton = Button(win, text = "confirm rating", fg = "black",
+                             command = confirmRating)                            
+buttons.append(confirmRatingButton)
 
 ratings = [1,2,3,4,5]
 setRating = StringVar()
