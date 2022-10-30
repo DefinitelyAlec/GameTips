@@ -51,16 +51,18 @@ def setState(newState):
         moreInfoButton["state"] = ACTIVE
         selectGameButton.pack()
         selectGameButton["state"] = ACTIVE
-        confirmSkillLevelButton.pack()
-        confirmSkillLevelButton["state"] = DISABLED
-        confirmCharButton.pack()
-        confirmCharButton["state"] = DISABLED
+        #confirmSkillLevelButton.pack()
+        #confirmSkillLevelButton["state"] = DISABLED
+        #confirmCharButton.pack()
+        #confirmCharButton["state"] = DISABLED
+        confirmPreferencesButton.pack()
+        confirmPreferencesButton["state"] = DISABLED
 
         dropSkill.pack()
         dropCharacter.pack()
         dropSkill.pack()
 
-        savePreferencesButton.pack()
+        saveFavoritesButton.pack()
         
     elif newState == "waiting in queue":
         findingMatchButton.pack()
@@ -131,11 +133,11 @@ def connectAndQuery(query):
         print ("Exception TYPE:", type(error))
     return listToReturn
 
-def loadPreferences(game):
-    preferences = open("localPreferences.txt")
+def loadFavorites(game):
+    favorites = open("localFavorites.json")
     currGame = "not a game"
     while currGame != game:
-        nextLine = preferences.readline()
+        nextLine = favorites.readline()
         if nextLine != "":
             currLine = json.loads(nextLine)
             currGame = currLine["Game"]
@@ -363,7 +365,7 @@ def confirmGame():
     getMaps()
     getSkills()
     getChars()
-    loadPreferences(setGame.get())
+    loadFavorites(setGame.get())
 
     buttons.remove(dropMap)
     buttons.remove(dropSkill)
@@ -395,6 +397,10 @@ def confirmSkillLevel():
 def confirmChar():
     print("we will try to give you tips for " + setCharacter.get())
     confirmCharButton["state"] = DISABLED
+
+def confirmPreferences():
+    print(f"we will try to give you {setSkillLevel.get()} level tips for {setCharacter.get()}")
+    confirmPreferencesButton["state"] = DISABLED
 
 # launch user to creating a tip UI
 def createTip():
@@ -476,25 +482,24 @@ def quitMakingTips():
     print("go get those w's")
     setState("selecting game")
 
-def savePreferences():
+def saveFavorites():
     print(f"saving {setSkillLevel.get()} and {setCharacter.get()} as favorites")
     
     #https://stackoverflow.com/questions/4710067/how-to-delete-a-specific-line-in-a-file
-    with open("localPreferences.txt", "r") as f:
+    with open("localFavorites.json", "r") as f:
         lines = f.readlines()
-    with open("localPreferences.txt", "w") as f:
+    with open("localFavorites.json", "w") as f:
         for line in lines:
             if json.loads(line)["Game"] != setGame.get():
                 f.write(line)
-        newPreference = "{\"Game\":\"" + setGame.get() + "\", \"SkillLevel\":\"" + setSkillLevel.get() + "\", \"Favorite Character\":\"" + setCharacter.get() +"\"}\n"
-        f.write(newPreference)
+        newFavorite = "{\"Game\":\"" + setGame.get() + "\", \"SkillLevel\":\"" + setSkillLevel.get() + "\", \"Favorite Character\":\"" + setCharacter.get() +"\"}\n"
+        f.write(newFavorite)
 
     
 def confirmRating():
     print("Thank you for rating this tip!")
     confirmRatingButton["state"] = DISABLED
-    # have to get the user and tip id still
-    query = f"INSERT INTO ratings VALUES({loggedInUser[0]}, {setRating.get()}, {currTip[7]}) RETURNING *"
+    query = f"INSERT INTO ratings VALUES({loggedInUser[0]}, {setRating.get()}, {currTip[7]}) ON CONFLICT(rater, tip) DO UPDATE SET rating = {setRating.get()} RETURNING *"
     connectAndQuery(query)
 
 # add buttons
@@ -531,16 +536,21 @@ selectGameButton = Button(win, text = "switch game", fg = "green",
 buttons.append(selectGameButton)
 
 matchOverButton = Button(win, text = "match over, clear tip", fg = "black",
-                         command = matchOver)
+                             command = matchOver)
 buttons.append(matchOverButton)
 
 confirmSkillLevelButton = Button(win, text = "confirm skill level", fg = "black",
-                                 command = confirmSkillLevel)
+                             command = confirmSkillLevel)
 buttons.append(confirmSkillLevelButton)
 
 confirmCharButton = Button(win, text = "confirm character", fg = "black",
-                                command = confirmChar)
+                            command = confirmChar)
 buttons.append(confirmCharButton)
+
+confirmPreferencesButton = Button(win, text = "confirm preferences", fg = "green",
+                            command = confirmPreferences)
+
+buttons.append(confirmPreferencesButton)
 
 createTipButton = Button(win, text = "create your own tip!", fg = "black",
                          command = createTip)
@@ -554,9 +564,9 @@ quitMakingTipsButton = Button(win, text = "finish making tips", fg = "black",
                              command = quitMakingTips)
 buttons.append(quitMakingTipsButton)
 
-savePreferencesButton = Button(win, text = "save as preferences", fg = "black",
-                             command = savePreferences)
-buttons.append(savePreferencesButton)
+saveFavoritesButton = Button(win, text = "save as favorites", fg = "black",
+                             command = saveFavorites)
+buttons.append(saveFavoritesButton)
 
 confirmRatingButton = Button(win, text = "confirm rating", fg = "black",
                              command = confirmRating)                            
@@ -611,13 +621,20 @@ setMap.trace('w', checkMapSelected)
 
 def checkSkillSelected(*args):
     confirmSkillLevelButton["state"] = ACTIVE
+    confirmPreferencesButton["state"] = ACTIVE
 
 setSkillLevel.trace('w', checkSkillSelected)
 
 def checkCharSelected(*args):
     confirmCharButton["state"] = ACTIVE
+    confirmPreferencesButton["state"] = ACTIVE
 
 setCharacter.trace('w', checkCharSelected)
+
+def checkRatingSelected(*args):
+    confirmRatingButton["state"] = ACTIVE
+
+setRating.trace('w', checkRatingSelected)
 
 # allow window to accept inputs while running ocr
 thread = threading.Thread(target = ocrStuff, args = ())

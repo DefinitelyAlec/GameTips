@@ -1,3 +1,0 @@
-{"Game":"Valorant", "SkillLevel":"beginner", "Favorite Character":"pheonix"}
-{"Game":"DOOM", "SkillLevel":"Ultra Nightmare", "Favorite Character":"select character"}
-{"Game":"Rainbow 6 Siege", "SkillLevel":"COPPER", "Favorite Character":"FINKA"}
