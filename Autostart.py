@@ -1,14 +1,14 @@
-import runpy
-import psutil
-import time
-import psycopg2
+from runpy import run_path
+from psutil import process_iter
+from time import sleep
+from psycopg2 import connect
 from tkinter import messagebox
 
 def connectAndQuery(query):
     listToReturn = None
     try:
         print("Connected.")
-        connection = psycopg2.connect(user="anyone", password="teamgametips",\
+        connection = connect(user="anyone", password="teamgametips",\
              host = "database-1.cgpwhtgqxogz.us-west-1.rds.amazonaws.com", port = 5432, database = "teamgametipsdb")
         cursor = connection.cursor()
 
@@ -27,12 +27,11 @@ def connectAndQuery(query):
 
 games = []
 for value in connectAndQuery("SELECT name FROM games"):
-    games.append(value[0])
-print(games)
+    games.append(value[0].replace(" ", "").strip())
 gameNotFound = True
 while gameNotFound:
-    time.sleep(1)
-    for p in psutil.process_iter(attrs=['name']):
+    sleep(1)
+    for p in process_iter(attrs=['name']):
         process = p.info['name'].lower().split('.')[0]
         for game in games:
             if process in game.lower() and process != '':
@@ -44,5 +43,5 @@ while gameNotFound:
 answer = messagebox.askyesno("Question","Do you want to run Intuitive Intel?")
 
 if answer:
-    runpy.run_path(path_name='.\\UI_Window.py')
+    run_path(path_name='.\\UI_Window.py')
 
