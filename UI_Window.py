@@ -39,6 +39,8 @@ def setState(newState):
             loginButton["state"] = DISABLED
         else:
             loginButton["state"] = ACTIVE
+        followUserButton.pack()
+        followUserButton["state"] = DISABLED
         titleText.set("Welcome to Intuitive Intel!")
 
         dropGame.pack()
@@ -51,10 +53,6 @@ def setState(newState):
         moreInfoButton["state"] = ACTIVE
         selectGameButton.pack()
         selectGameButton["state"] = ACTIVE
-        #confirmSkillLevelButton.pack()
-        #confirmSkillLevelButton["state"] = DISABLED
-        #confirmCharButton.pack()
-        #confirmCharButton["state"] = DISABLED
         confirmPreferencesButton.pack()
         confirmPreferencesButton["state"] = DISABLED
 
@@ -108,8 +106,10 @@ def setState(newState):
         dropSkill.pack()
         dropCharacter.pack()
         
-    elif newState == "rating tip":
-        titleText.set("How good was this tip?")
+    elif newState == "browsing users":
+        inputUser.pack()
+        confirmUserButton.pack()
+        selectGameButton.pack()
         
 
 # Wrapper for any query to db
@@ -134,7 +134,7 @@ def connectAndQuery(query):
     return listToReturn
 
 def loadFavorites(game):
-    favorites = open("localFavorites.json")
+    favorites = open("localFavorites.txt")
     currGame = "not a game"
     while currGame != game:
         nextLine = favorites.readline()
@@ -166,6 +166,7 @@ def loginHelper():
     if possibleUser != None and len(possibleUser) > 0:
         global loggedInUser
         loggedInUser = possibleUser[0]
+        followUserButton["state"] = ACTIVE
     else: 
         print("No account found with that email.")
 
@@ -242,6 +243,11 @@ inputTipTextStr = StringVar()
 inputTipText = Entry(win, textvariable= inputTipTextStr)
 inputTipText.insert(0, "Default Tip Info")
 buttons.append(inputTipText)
+
+inputUserStr = StringVar()
+inputUser = Entry(win, textvariable= inputUserStr)
+inputUser.insert(0, "Type username EXACTLY")
+buttons.append(inputUser)
 
 def getTip(mapName):
     charSelected = setCharacter.get() != "select character"
@@ -324,7 +330,7 @@ def cancelMatch():
     setState("waiting in menu")
 
     
-# helper for above
+# confirm map when selecting
 def confirmMap():
     global thread
     global currTip
@@ -338,7 +344,7 @@ def confirmMap():
 
     setState("in a match")
 
-# helper for above
+# use game selected in dropdown
 def confirmGame():
     global dropMap
     global dropSkill
@@ -363,26 +369,17 @@ def confirmGame():
     buttons.append(dropCharacter)
     setState("waiting in menu")
     
-# only button on launch? User selects which game they are playing
+# switch game to a different game
 def selectGame():
     print("swapping game")
     setState("selecting game")
 
-# to limit buttons available during match
+# do all logic when match is over
 def matchOver():
     print("GG")
     setState("waiting in menu")
 
-# confirmation button to limit tips based on preferred skill level
-def confirmSkillLevel():
-    print("we will try to give you " + setSkillLevel.get() + " level tips")
-    confirmSkillLevelButton["state"] = DISABLED
-
-# confirmation button to limit tips based on preferred character
-def confirmChar():
-    print("we will try to give you tips for " + setCharacter.get())
-    confirmCharButton["state"] = DISABLED
-
+# confirmation button to set preferences
 def confirmPreferences():
     print(f"we will try to give you {setSkillLevel.get()} level tips for {setCharacter.get()}")
     confirmPreferencesButton["state"] = DISABLED
@@ -471,9 +468,9 @@ def saveFavorites():
     print(f"saving {setSkillLevel.get()} and {setCharacter.get()} as favorites")
     
     #https://stackoverflow.com/questions/4710067/how-to-delete-a-specific-line-in-a-file
-    with open("localFavorites.json", "r") as f:
+    with open("localFavorites.txt", "r") as f:
         lines = f.readlines()
-    with open("localFavorites.json", "w") as f:
+    with open("localFavorites.txt", "w") as f:
         for line in lines:
             if json.loads(line)["Game"] != setGame.get():
                 f.write(line)
@@ -486,6 +483,18 @@ def confirmRating():
     confirmRatingButton["state"] = DISABLED
     query = f"INSERT INTO ratings VALUES({loggedInUser[0]}, {setRating.get()}, {currTip[7]}) ON CONFLICT(rater, tip) DO UPDATE SET rating = {setRating.get()} RETURNING *"
     connectAndQuery(query)
+
+def followUser():
+    print("select a user to follow!")
+    setState("browsing users")
+
+def confirmUser():
+    query = f"INSERT INTO followers SELECT {loggedInUser[0]}, userid from gamers as g where g.name = \'{inputUserStr.get()}\' returning *"
+    try:
+        connectAndQuery(query)
+    except:
+        print("follow failed")
+    confirmUserButton["state"] = DISABLED
 
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
@@ -524,17 +533,8 @@ matchOverButton = Button(win, text = "match over, clear tip", fg = "black",
                              command = matchOver)
 buttons.append(matchOverButton)
 
-confirmSkillLevelButton = Button(win, text = "confirm skill level", fg = "black",
-                             command = confirmSkillLevel)
-buttons.append(confirmSkillLevelButton)
-
-confirmCharButton = Button(win, text = "confirm character", fg = "black",
-                            command = confirmChar)
-buttons.append(confirmCharButton)
-
 confirmPreferencesButton = Button(win, text = "confirm preferences", fg = "green",
                             command = confirmPreferences)
-
 buttons.append(confirmPreferencesButton)
 
 createTipButton = Button(win, text = "create your own tip!", fg = "black",
@@ -556,6 +556,14 @@ buttons.append(saveFavoritesButton)
 confirmRatingButton = Button(win, text = "confirm rating", fg = "black",
                              command = confirmRating)                            
 buttons.append(confirmRatingButton)
+
+followUserButton = Button(win, text = "manage followings", fg = "black",
+                             command = followUser)
+buttons.append(followUserButton)
+
+confirmUserButton = Button(win, text = "follow this user", fg = "black",
+                             command = confirmUser)
+buttons.append(confirmUserButton)
 
 ratings = [1,2,3,4,5]
 setRating = StringVar()
@@ -605,13 +613,11 @@ def checkMapSelected(*args):
 setMap.trace('w', checkMapSelected)
 
 def checkSkillSelected(*args):
-    confirmSkillLevelButton["state"] = ACTIVE
     confirmPreferencesButton["state"] = ACTIVE
 
 setSkillLevel.trace('w', checkSkillSelected)
 
 def checkCharSelected(*args):
-    confirmCharButton["state"] = ACTIVE
     confirmPreferencesButton["state"] = ACTIVE
 
 setCharacter.trace('w', checkCharSelected)
