@@ -243,23 +243,6 @@ inputTipText = Entry(win, textvariable= inputTipTextStr)
 inputTipText.insert(0, "Default Tip Info")
 buttons.append(inputTipText)
 
-def displayImage():
-    global canvas
-    global img
-    #display code, not screenshot
-    # display image(s)
-    #canvas.pack_forget() # it stacks and falls lower and lower without this
-    canvas = Canvas(win, width = 1920, height = 1080)
-    canvas.pack()
-    urllib.request.urlretrieve(
-      'https://media.geeksforgeeks.org/wp-content/uploads/20210318103632/gfg-300x300.png',
-       "gfg.png")
-  
-    img = Image.open("gfg.png")
-    img = ImageTk.PhotoImage(img)
-    canvas.create_image(10,10,anchor = NW, image = img)
-
-
 def getTip(mapName):
     charSelected = setCharacter.get() != "select character"
     skillLevelSelected = setSkillLevel.get() != "select skill level"
@@ -349,8 +332,10 @@ def confirmMap():
     thread._is_stopped = True
     currTip = getTip(setMap.get())
     #TODO: make new method to handle all logic when finding a match
+    webSiteLink.set(currTip[6])
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
     canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
+
     setState("in a match")
 
 # helper for above
