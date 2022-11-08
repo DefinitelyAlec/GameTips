@@ -33,7 +33,6 @@ games = []
 for value in connectAndQuery("SELECT name FROM games"):
     games.append(value[0].replace(" ", "").strip())
 gameNotFound = True
-games.append("GenshinImpact")
 while gameNotFound:
     sleep(1)
     for p in process_iter(attrs=['name']):
