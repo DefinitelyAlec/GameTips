@@ -108,7 +108,9 @@ def setState(newState):
         
     elif newState == "browsing users":
         inputUser.pack()
+        searchForUserButton.pack()
         confirmUserButton.pack()
+        confirmUserButton["state"] = DISABLED
         selectGameButton.pack()
         
 
@@ -488,12 +490,38 @@ def followUser():
     print("select a user to follow!")
     setState("browsing users")
 
-def confirmUser():
-    query = f"INSERT INTO followers SELECT {loggedInUser[0]}, userid from gamers as g where g.name = \'{inputUserStr.get()}\' returning *"
+def searchForUser():
+    print("searching for that user...")
+    query = f"SELECT * FROM users where username = \'{inputUserStr.get()}\'" 
+    result = connectAndQuery(query) # one user if this userrname exists
     try:
-        connectAndQuery(query)
+        query = f"SELECT * FROM followers where follower = {loggedInUser[0]} AND creator = {result[0][0]}"
+        result = connectAndQuery(query) # one result if user is following, zero if user is not following
+        try:
+            # user is already following
+            print(result[0])
+            print(f"you are already following this creator, unfollow them?")
+            confirmUserButton["text"] = "Unfollow"
+            confirmUserButton["state"] = ACTIVE
+            confirmUserButton.configure(command= confirmUnfollowUser)
+        except:
+            # user is not currently following
+            print(f"you are not following this creator yet, follow them?")
+            confirmUserButton["text"] = "Follow"
+            confirmUserButton["state"] = ACTIVE
+            confirmUserButton.configure(command= confirmFollowUser)
+            
     except:
-        print("follow failed")
+        print("there are no users with that name, please type it exactly.")
+
+def confirmUnfollowUser():
+    query = f"WITH id AS (SELECT user_id FROM users where username = \'{inputUserStr.get()}\') DELETE FROM followers WHERE follower = {loggedInUser[0]} AND creator IN (SELECT user_id FROM id) returning *"
+    connectAndQuery(query)
+    confirmUserButton["state"] = DISABLED
+    
+def confirmFollowUser():
+    query = f"INSERT INTO followers SELECT {loggedInUser[0]}, u.user_id from users as u where u.username = \'{inputUserStr.get()}\' returning *"
+    connectAndQuery(query)
     confirmUserButton["state"] = DISABLED
 
 # add buttons
@@ -561,8 +589,12 @@ followUserButton = Button(win, text = "manage followings", fg = "black",
                              command = followUser)
 buttons.append(followUserButton)
 
+searchForUserButton = Button(win, text = "search!", fg = "green",
+                            command = searchForUser)
+buttons.append(searchForUserButton)
+
 confirmUserButton = Button(win, text = "follow this user", fg = "black",
-                             command = confirmUser)
+                             command = confirmFollowUser)
 buttons.append(confirmUserButton)
 
 ratings = [1,2,3,4,5]
