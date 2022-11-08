@@ -122,7 +122,10 @@ def connectAndQuery(query):
         cursor = connection.cursor()
 
         cursor.execute(query)
-        listToReturn = cursor.fetchall()
+        try:
+            listToReturn = cursor.fetchall()
+        except:
+            listToReturn = None
         if connection:
             print("Closing connection.")
             connection.commit()
