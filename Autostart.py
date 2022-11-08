@@ -3,6 +3,8 @@ from psutil import process_iter
 from time import sleep
 from psycopg2 import connect
 from tkinter import messagebox
+from os import getcwd
+from sys import argv
 
 def connectAndQuery(query):
     listToReturn = None
@@ -24,11 +26,14 @@ def connectAndQuery(query):
         print ("Exception TYPE:", type(error))
     return listToReturn
 
-
+if not len(argv) > 1:
+    print("No path provided. Exiting.")
+    exit()
 games = []
 for value in connectAndQuery("SELECT name FROM games"):
     games.append(value[0].replace(" ", "").strip())
 gameNotFound = True
+games.append("GenshinImpact")
 while gameNotFound:
     sleep(1)
     for p in process_iter(attrs=['name']):
@@ -40,8 +45,11 @@ while gameNotFound:
                 break
         if not gameNotFound: break
 
+path = argv[1]
+print(f"running: {path}")
 answer = messagebox.askyesno("Question","Do you want to run Intuitive Intel?")
 
 if answer:
-    run_path(path_name='.\\UI_Window.py')
+    
+    run_path(path_name=path)
 
