@@ -35,10 +35,7 @@ def setState(newState):
         createTipButton.pack()
         createTipButton["state"] = DISABLED
         loginButton.pack()
-        if loggedInUser != None:
-            loginButton["state"] = DISABLED
-        else:
-            loginButton["state"] = ACTIVE
+        loginButton["state"] = ACTIVE
         followUserButton.pack()
         followUserButton["state"] = DISABLED
         titleText.set("Welcome to Intuitive Intel!")
@@ -63,6 +60,7 @@ def setState(newState):
         saveFavoritesButton.pack()
         
     elif newState == "waiting in queue":
+        startAutoDetectButton.pack()
         findingMatchButton.pack()
         findingMatchButton["state"] = DISABLED
         matchMissedButton.pack()
@@ -169,10 +167,12 @@ def loginHelper():
         global loggedInUser
         loggedInUser = possibleUser[0]
         followUserButton["state"] = ACTIVE
+
     else: 
         print("No account found with that email.")
 
 def login():
+    loginButton["state"] = DISABLED
     global thread
     if thread._started:
         thread = threading.Thread(target = loginHelper, args = (), )
@@ -200,6 +200,7 @@ webSiteLink.set("https://intuitiveintel.netlify.app/")
 win.attributes('-topmost',True)
 
 global currTip
+global listOfTips
 global img
 global canvas
 canvas = Canvas(win, width = 1000, height = 100)
@@ -251,24 +252,20 @@ inputUser = Entry(win, textvariable= inputUserStr)
 inputUser.insert(0, "Type username EXACTLY")
 buttons.append(inputUser)
 
-def getTip(mapName):
+def getTips(mapName):
+    global listOfTips
     charSelected = setCharacter.get() != "select character"
     skillLevelSelected = setSkillLevel.get() != "select skill level"
 
-    query = "SELECT * FROM tips JOIN maps ON map = mapid "
+    query = f"SELECT * FROM tips LEFT JOIN maps ON map = mapid LEFT JOIN characters ON charid = character LEFT JOIN skilllevels ON id = skilllevel WHERE (name(maps) = \'{mapName}\' OR name(maps) IS NULL) "
     if(charSelected):
-        query += "JOIN characters ON charid = character "
+        query += f"AND (name(characters) = \'{setCharacter.get()}\' OR name(characters) IS NULL) "
     if(skillLevelSelected):
-        query+= "JOIN skilllevels ON id = skilllevel "
-    query += f"WHERE name(maps) = \'{mapName}\' "
-    if(charSelected):
-        query += f"AND name(characters) = \'{setCharacter.get()}\' "
-    if(skillLevelSelected):
-        query += f"AND level = \'{setSkillLevel.get()}\' "
+        query += f"AND (level = \'{setSkillLevel.get()}\' OR level IS NULL) "
+    query += "ORDER BY map NULLS LAST, character NULLS LAST, level NULLS LAST"
     listOfTips = connectAndQuery(query)
-    # TODO: Change up how we are selecting a tip.
-    # TODO: Have fail state for if character/skill combo DNE
-    return listOfTips.pop()
+    for tip in listOfTips:
+        print(tip)
 
 def ocrStuff():
     global img
@@ -298,7 +295,8 @@ def ocrStuff():
     print(resultMap)
     cancelSearchButton["state"] = "disabled"
     findingMatchButton["state"] = "active"
-    currTip = getTip(setMap.get())
+    getTips(setMap.get())
+    currTip = listOfTips.pop()
     titleText.set("Map found: " + resultMap + "\nTip: " + currTip[0])
     canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
 
@@ -309,10 +307,6 @@ def ocrStuff():
 # when user starts searching for a game
 def findMatch():
     setState("waiting in queue")
-    global thread
-    if thread._started:
-        thread = threading.Thread(target = ocrStuff, args = ())
-        thread.start()
 
 # user has found a match and did not get a tip
 def matchFound():
@@ -338,8 +332,8 @@ def confirmMap():
     global currTip
     print("map confirmed")
     thread._is_stopped = True
-    currTip = getTip(setMap.get())
-    #TODO: make new method to handle all logic when finding a match
+    getTips(setMap.get())
+    currTip = listOfTips.pop()
     webSiteLink.set(currTip[6])
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
     canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
@@ -524,6 +518,12 @@ def confirmFollowUser():
     connectAndQuery(query)
     confirmUserButton["state"] = DISABLED
 
+def startAutoDetect():
+    global thread
+    if thread._started:
+        thread = threading.Thread(target = ocrStuff, args = ())
+        thread.start()
+
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
@@ -596,6 +596,10 @@ buttons.append(searchForUserButton)
 confirmUserButton = Button(win, text = "follow this user", fg = "black",
                              command = confirmFollowUser)
 buttons.append(confirmUserButton)
+
+startAutoDetectButton = Button(win, text = "start OCR auto-detect", fg = "black",
+                            command = startAutoDetect)
+buttons.append(startAutoDetectButton)
 
 ratings = [1,2,3,4,5]
 setRating = StringVar()
