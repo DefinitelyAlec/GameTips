@@ -60,19 +60,15 @@ def setState(newState):
         saveFavoritesButton.pack()
         
     elif newState == "waiting in queue":
-        startAutoDetectButton.pack()
-        findingMatchButton.pack()
-        findingMatchButton["state"] = DISABLED
         matchMissedButton.pack()
         matchMissedButton["state"] = ACTIVE
         moreInfoButton.pack()
         moreInfoButton["state"] = ACTIVE
         cancelSearchButton.pack()
         cancelSearchButton["state"] = ACTIVE
+        startAutoDetectButton.pack()
 
-    elif newState == "map missed":        
-        findingMatchButton.pack()
-        findingMatchButton["state"] = DISABLED
+    elif newState == "map missed":
         matchMissedButton.pack()
         matchMissedButton["state"] = ACTIVE
         moreInfoButton.pack()
@@ -80,13 +76,14 @@ def setState(newState):
         cancelSearchButton.pack()
         cancelSearchButton["state"] = DISABLED
         confirmMapButton.pack()
-        confirmMapButton["state"] = DISABLED # same deal as confirm game button
+        confirmMapButton["state"] = DISABLED
 
         dropMap.pack()
         
     elif newState == "in a match":
         moreInfoButton.pack()
         moreInfoButton["state"] = ACTIVE
+        nextTipButton.pack()
         confirmRatingButton.pack()
         dropRating.pack()
         matchOverButton.pack()
@@ -204,6 +201,7 @@ win.attributes('-topmost',True)
 
 global currTip
 global listOfTips
+global currTipText
 global img
 global canvas
 canvas = Canvas(win, width = 1000, height = 100)
@@ -301,7 +299,8 @@ def ocrStuff():
     getTips(setMap.get())
     currTip = listOfTips.pop()
     titleText.set("Map found: " + resultMap + "\nTip: " + currTip[0])
-    canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
+    global currTipText
+    currTipText = canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
 
     setState("in a match")
 
@@ -339,7 +338,8 @@ def confirmMap():
     currTip = listOfTips.pop()
     webSiteLink.set(currTip[6])
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
-    canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
+    global currTipText
+    currTipText =  canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
 
     setState("in a match")
 
@@ -527,12 +527,19 @@ def startAutoDetect():
         thread = threading.Thread(target = ocrStuff, args = ())
         thread.start()
 
+def nextTip():
+    global currTipText
+    currTip = listOfTips.pop()
+    webSiteLink.set(currTip[6])
+    titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
+    canvas.itemconfig(currTipText, text=currTip[1])
+
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
 buttons.append(findingMatchButton)
 
-matchMissedButton = Button(win, text = "match found!", fg = "red",
+matchMissedButton = Button(win, text = "MATCH FOUND!", fg = "red",
                         command = matchFound)
 buttons.append(matchMissedButton)
 
@@ -552,7 +559,7 @@ confirmMapButton = Button(win, text = "confirm map", fg = "black",
                           command = confirmMap)
 buttons.append(confirmMapButton)
 
-confirmGameButton = Button(win, text = "confirm game", fg = "black",
+confirmGameButton = Button(win, text = "Play game", fg = "green",
                            command = confirmGame)
 buttons.append(confirmGameButton)
 
@@ -603,6 +610,9 @@ buttons.append(confirmUserButton)
 startAutoDetectButton = Button(win, text = "start OCR auto-detect", fg = "black",
                             command = startAutoDetect)
 buttons.append(startAutoDetectButton)
+
+nextTipButton = Button(win, text = "get a different tip", fg = "red",
+                            command = nextTip)
 
 ratings = [1,2,3,4,5]
 setRating = StringVar()
