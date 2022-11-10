@@ -33,10 +33,11 @@ games = []
 for value in connectAndQuery("SELECT name FROM games"):
     games.append(value[0].replace(" ", "").strip())
 gameNotFound = True
+print (games)
 while gameNotFound:
     sleep(1)
     for p in process_iter(attrs=['name']):
-        process = p.info['name'].lower().split('.')[0]
+        process = p.info['name'].lower().split('.')[0].replace(" ", "").strip()
         for game in games:
             if process in game.lower() and process != '':
                 print(f"Found process: {process} that matches game: {game}")
@@ -44,6 +45,11 @@ while gameNotFound:
                 break
         if not gameNotFound: break
 
+import tkinter
+
+top =  tkinter.Tk()
+top.geometry("150x150")
+top.attributes('-topmost',True)
 path = argv[1]
 print(f"running: {path}")
 answer = messagebox.askyesno("Question","Do you want to run Intuitive Intel?")
@@ -52,3 +58,5 @@ if answer:
     
     run_path(path_name=path)
 
+
+top.mainloop()
