@@ -16,6 +16,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 # explicit state machine
 currState = "selecting game"
 loggedInUser = None
+seenTips = []
+
 
 # for any new button, pack when it should be there, and pack_forget in all others
 def setState(newState):
@@ -167,9 +169,9 @@ def loginHelper():
         global loggedInUser
         loggedInUser = possibleUser[0]
         followUserButton["state"] = ACTIVE
-
     else: 
         print("No account found with that email.")
+    retrieveSeenTips()
 
 def login():
     loginButton["state"] = DISABLED
@@ -177,6 +179,7 @@ def login():
     if thread._started:
         thread = threading.Thread(target = loginHelper, args = (), )
         thread.start()
+
 
 
 #Create an instance of tkinter window or frame
@@ -206,12 +209,12 @@ global img
 global canvas
 canvas = Canvas(win, width = 1000, height = 100)
 buttons.append(canvas)
+currTipText = canvas.create_text(333, 50, text="", fill="black", font=('Helvetica 12'), width = 333)
 
 games = [] 
 games.append("select game")
-for value in connectAndQuery("SELECT name FROM games"):
+for value in connectAndQuery("SELECT name, gameid FROM games"):
     games.append(value[0])
-    
 maps = []
 maps.append("invalid map option")
 def getMaps():
@@ -265,8 +268,9 @@ def getTips(mapName):
         query += f"AND (level = \'{setSkillLevel.get()}\' OR level IS NULL) "
     query += "ORDER BY map NULLS LAST, character NULLS LAST, level NULLS LAST"
     listOfTips = connectAndQuery(query)
-    for tip in listOfTips:
-        print(tip)
+    listOfTips.reverse()
+    # for tip in listOfTips:
+    #     print(tip)
 
 def ocrStuff():
     global img
@@ -286,7 +290,7 @@ def ocrStuff():
         readerResult = reader.readtext(numpyVersion, detail = 0)
         for text in readerResult:
             for map in maps:
-                if text == map:
+                if text.lower() == map.lower():
                     foundMap = True
                     resultMap = map
                     break
@@ -300,8 +304,7 @@ def ocrStuff():
     currTip = listOfTips.pop()
     titleText.set("Map found: " + resultMap + "\nTip: " + currTip[0])
     global currTipText
-    currTipText = canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
-
+    canvas.itemconfig(currTipText, text=currTip[1])
     setState("in a match")
 
     return resultMap
@@ -339,7 +342,7 @@ def confirmMap():
     webSiteLink.set(currTip[6])
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
     global currTipText
-    currTipText =  canvas.create_text(300, 50, text=currTip[1], fill="black", font=('Helvetica 12'), width = 300)
+    canvas.itemconfig(currTipText, text=currTip[1])
 
     setState("in a match")
 
@@ -376,6 +379,7 @@ def selectGame():
 # do all logic when match is over
 def matchOver():
     print("GG")
+    nextTipButton.pack_forget()
     setState("waiting in menu")
 
 # confirmation button to set preferences
@@ -476,6 +480,38 @@ def saveFavorites():
         newFavorite = "{\"Game\":\"" + setGame.get() + "\", \"SkillLevel\":\"" + setSkillLevel.get() + "\", \"Favorite Character\":\"" + setCharacter.get() +"\"}\n"
         f.write(newFavorite)
 
+def saveSeenTips():
+    global seenTips
+    global loggedInUser
+    if loggedInUser is None:
+        return
+    lines = open('seenTips.txt','r').readlines()
+    oldUserLog = {}
+    with open('seenTips.txt','w') as jsonFile:
+        for line in lines:
+            jsonLine = json.loads(line)
+            if jsonLine["userid"] != loggedInUser[0]:
+                jsonFile.write(line)
+            else:
+                oldUserLog = jsonLine
+        newUserLog = oldUserLog
+        tipids = newUserLog.get("tipids", [])
+        for tipid in seenTips:
+            if tipid not in tipids:
+                tipids.append(tipid)
+        newUserLog["tipids"] = tipids
+        jsonFile.write(json.dumps(newUserLog))
+
+def retrieveSeenTips():
+    global loggedInUser
+    global seenTips
+    if loggedInUser is None:
+        return
+    for line in open('seenTips.txt','r').readlines():
+        jsonLine = json.loads(line)
+        if jsonLine["userid"] == loggedInUser[0]:
+            seenTips = jsonLine["tipids"]
+            return
     
 def confirmRating():
     print("Thank you for rating this tip!")
@@ -526,13 +562,31 @@ def startAutoDetect():
     if thread._started:
         thread = threading.Thread(target = ocrStuff, args = ())
         thread.start()
-
+listOfSeenTips = []
 def nextTip():
     global currTipText
-    currTip = listOfTips.pop()
+    global seenTips
+    currTip = None
+    while len(listOfTips) > 0:
+        currTip = listOfTips.pop()
+        if not currTip[7] in seenTips:
+            seenTips.append(currTip[7])
+            break
+        else:
+            listOfSeenTips.append(currTip)
+            currTip = None
+    
+    if currTip is None and len(listOfSeenTips) > 0:
+        currTip = listOfSeenTips.pop()
+    elif currTip is None: 
+        currTip = ["There is no more tips!!!"] + [None]*10
+
     webSiteLink.set(currTip[6])
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
-    canvas.itemconfig(currTipText, text=currTip[1])
+    if currTip[1] == None:
+        canvas.itemconfig(currTipText, text="")
+    else:
+        canvas.itemconfig(currTipText, text=currTip[1])
 
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
@@ -683,6 +737,8 @@ thread._stop = threading.Event()
 #displayImage()
 
 setState("selecting game")
+retrieveSeenTips()
 
 win.mainloop()
+saveSeenTips()
 exit(0)
