@@ -24,10 +24,11 @@ def setState(newState):
     global titleText
     global currState
     currState = newState
-    
+
     # despagghetified
     for button in buttons:
         button.pack_forget()
+        button.place_forget()
 
     if newState == "selecting game":
         moreInfoButton.pack()
@@ -92,6 +93,8 @@ def setState(newState):
 
     elif newState == "creating tip": # for now you have to select game first
         inputTitle.pack()
+        tipTextLabel.place(x=250, y=95)
+        tipTitleLabel.place(x=250, y=75)
         inputTipText.pack()
         postTipButton.pack()
         quitMakingTipsButton.pack()
@@ -164,6 +167,7 @@ def loginHelper():
         global loggedInUser
         loggedInUser = possibleUser[0]
         followUserButton["state"] = ACTIVE
+        checkGameSelected()
     else: 
         print("No account found with that email.")
     retrieveSeenTips()
@@ -229,11 +233,18 @@ def getChars():
         characters.append(value[0])
 
 # setup the inputs to prompt the user
+
+tipTitleLabel = Label(win, text = "Tip Title:")
+tipTitleLabel.place(x=250, y=75)
+buttons.append(tipTitleLabel)
 inputTitleStr = StringVar()
 inputTitle = Entry(win, textvariable= inputTitleStr)
 inputTitle.insert(0, "Default Tip Title")
 buttons.append(inputTitle)
 
+tipTextLabel = Label(win, text = "Tip Text:")
+tipTextLabel.place(x=250, y=95)
+buttons.append(tipTextLabel)
 inputTipTextStr = StringVar()
 inputTipText = Entry(win, textvariable= inputTipTextStr)
 inputTipText.insert(0, "Default Tip Info")
@@ -676,8 +687,10 @@ buttons.append(dropCharacter)
 
 # confirm game button inactive until a game is selected
 def checkGameSelected(*args):
-    confirmGameButton["state"] = ACTIVE
-    createTipButton["state"] = ACTIVE
+    if setGame.get() != "select game":
+        confirmGameButton["state"] = ACTIVE
+        if loggedInUser != None:
+            createTipButton["state"] = ACTIVE
 
 setGame.trace('w', checkGameSelected)
 
