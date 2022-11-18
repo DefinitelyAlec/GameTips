@@ -464,11 +464,11 @@ def saveFavorites():
     with open("localFavorites.txt", "r") as f:
         lines = f.readlines()
     with open("localFavorites.txt", "w") as f:
+        newFavorite = "{\"Game\":\"" + setGame.get() + "\", \"Favorite Character\":\"" + setCharacter.get() +"\"}\n"
+        f.write(newFavorite)
         for line in lines:
             if json.loads(line)["Game"] != setGame.get():
                 f.write(line)
-        newFavorite = "{\"Game\":\"" + setGame.get() + "\", Favorite Character\":\"" + setCharacter.get() +"\"}\n"
-        f.write(newFavorite)
 
 def saveSeenTips():
     global seenTips
