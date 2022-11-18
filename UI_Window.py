@@ -52,10 +52,7 @@ def setState(newState):
         selectGameButton["state"] = ACTIVE
         confirmPreferencesButton.pack()
         confirmPreferencesButton["state"] = DISABLED
-
-        dropSkill.pack()
         dropCharacter.pack()
-        dropSkill.pack()
 
         saveFavoritesButton.pack()
         
@@ -98,7 +95,6 @@ def setState(newState):
         quitMakingTipsButton.pack()
         
         dropMap.pack()
-        dropSkill.pack()
         dropCharacter.pack()
         
     elif newState == "browsing users":
@@ -143,7 +139,6 @@ def loadFavorites(game):
             currGame = currLine["Game"]
         else:
             return
-    setSkillLevel.set(currLine["SkillLevel"])
     setCharacter.set(currLine["Favorite Character"])
 
 def get_authenticated_login_service():
@@ -204,6 +199,7 @@ global listOfTips
 global currTipText
 global img
 global canvas
+global following
 canvas = Canvas(win, width = 1000, height = 100)
 buttons.append(canvas)
 
@@ -220,14 +216,6 @@ def getMaps():
     maps.append("select map")
     for value in connectAndQuery("SELECT * FROM maps JOIN games ON gameid = game WHERE name(games) = \'" + setGame.get() + "\'"):
         maps.append(value[0])
-    
-skillLevels = []
-skillLevels.append("invalid skill option")
-def getSkills():
-    skillLevels.clear()
-    skillLevels.append("select skill level")
-    for value in connectAndQuery("SELECT * FROM skillLevels JOIN games ON gameid = game WHERE name = \'" + setGame.get() + "\'"):
-        skillLevels.append(value[1])
 
 characters = []
 characters.append("invalid character option")
@@ -237,7 +225,7 @@ def getChars():
     for value in connectAndQuery("SELECT * FROM characters JOIN games ON gameid = game WHERE name(games) = \'" + setGame.get() + "\'"):
         characters.append(value[0])
 
-
+# setup the inputs to prompt the user
 inputTitleStr = StringVar()
 inputTitle = Entry(win, textvariable= inputTitleStr)
 inputTitle.insert(0, "Default Tip Title")
@@ -256,14 +244,11 @@ buttons.append(inputUser)
 def getTips(mapName):
     global listOfTips
     charSelected = setCharacter.get() != "select character"
-    skillLevelSelected = setSkillLevel.get() != "select skill level"
 
-    query = f"SELECT * FROM tips LEFT JOIN maps ON map = mapid LEFT JOIN characters ON charid = character LEFT JOIN skilllevels ON id = skilllevel WHERE (name(maps) = \'{mapName}\' OR name(maps) IS NULL) "
+    query = f"SELECT * FROM tips LEFT JOIN maps ON map = mapid LEFT JOIN characters ON charid = character WHERE (name(maps) = \'{mapName}\' OR name(maps) IS NULL) "
     if(charSelected):
         query += f"AND (name(characters) = \'{setCharacter.get()}\' OR name(characters) IS NULL) "
-    if(skillLevelSelected):
-        query += f"AND (level = \'{setSkillLevel.get()}\' OR level IS NULL) "
-    query += "ORDER BY map NULLS LAST, character NULLS LAST, level NULLS LAST"
+    query += "ORDER BY map NULLS FIRST, character NULLS FIRST, level NULLS FIRST"
     listOfTips = connectAndQuery(query)
     for tip in listOfTips:
         print(tip)
@@ -343,29 +328,46 @@ def confirmMap():
 
     setState("in a match")
 
-# use game selected in dropdown
-def confirmGame():
+def getFollowing():
+    global following
+    if(loggedInUser == None):
+        return
+    query = f"SELECT creator from followers where follower = {loggedInUser[0]}"
+    following = connectAndQuery(query)
+
+def queryForGetGame():
     global dropMap
-    global dropSkill
     global dropCharacter
-    
-    setCharacter.set("select character")
-    setSkillLevel.set("select skill level")
+    global following
 
     getMaps()
-    getSkills()
     getChars()
+    getFollowing()
+
+
+
+# use game selected in dropdown
+def confirmGame():
+    global thread
+    global dropMap
+    global dropCharacter
+
+    setCharacter.set("select character")
+
+    if thread._started:
+        thread = threading.Thread(target = queryForGetGame, args = ())
+        thread.start()
+
+    queryForGetGame()
     loadFavorites(setGame.get())
 
     buttons.remove(dropMap)
-    buttons.remove(dropSkill)
     buttons.remove(dropCharacter)
     dropMap = OptionMenu(win, setMap, *maps)
-    dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
     dropCharacter = OptionMenu(win, setCharacter, *characters)
     buttons.append(dropMap)
-    buttons.append(dropSkill)
     buttons.append(dropCharacter)
+
     setState("waiting in menu")
     
 # switch game to a different game
@@ -380,26 +382,21 @@ def matchOver():
 
 # confirmation button to set preferences
 def confirmPreferences():
-    print(f"we will try to give you {setSkillLevel.get()} level tips for {setCharacter.get()}")
+    print(f"we will try to give you tips for {setCharacter.get()}")
     confirmPreferencesButton["state"] = DISABLED
 
 # launch user to creating a tip UI
 def createTip():
     print("we're excited to see what you make!")    
     global dropMap
-    global dropSkill
     global dropCharacter
     getMaps()
-    getSkills()
     getChars()
     buttons.remove(dropMap)
-    buttons.remove(dropSkill)
     buttons.remove(dropCharacter)
     dropMap = OptionMenu(win, setMap, *maps)
-    dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
     dropCharacter = OptionMenu(win, setCharacter, *characters)
     buttons.append(dropMap)
-    buttons.append(dropSkill)
     buttons.append(dropCharacter)
     setState("creating tip")
     
@@ -407,7 +404,6 @@ def createTip():
 def postTip():
     charSelected = setCharacter.get() != "select character"
     mapSelected = setMap.get() != "select map"
-    skillLevelSelected = setSkillLevel.get() != "select skill level"
 
     print("This tip will help many other gamers now :)")
     query = "INSERT INTO tips(title, explanation, creator"
@@ -415,47 +411,30 @@ def postTip():
         query += ", character"
     if mapSelected:
         query += ", map"
-    if skillLevelSelected:
-        query += ", skilllevel"
     query += f") SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', {loggedInUser[0]}"
     if charSelected:
         query += ", charid"
     if mapSelected:
         query += ", mapid"
-    if skillLevelSelected:
-        query += ", id"
 
-    if charSelected or mapSelected or skillLevelSelected:
+    if charSelected or mapSelected:
         query += " FROM "
 
         if charSelected:
             query += "characters c "
-            if mapSelected or skillLevelSelected:
+            if mapSelected:
                 query += "JOIN "
         if mapSelected:
             query += "maps m "
             if charSelected:
                 query += "ON game(c) = game(m) "
-            if skillLevelSelected:
-                query += "JOIN "
-        if skillLevelSelected:
-            query += "skilllevels s "
-            if charSelected or mapSelected:
-                if charSelected:
-                    query += "ON game(c) = game(s) "
-                else:
-                    query += "ON game(m) = game(s) "
         query += "WHERE "
         if charSelected:
             query += f"name(c) = \'{setCharacter.get()}\' "
-            if mapSelected or skillLevelSelected:
+            if mapSelected:
                 query += "AND "
         if mapSelected:
             query += f"name(m) = \'{setMap.get()}\' "
-            if skillLevelSelected:
-                query += "AND "
-        if skillLevelSelected:
-            query += f"level = \'{setSkillLevel.get()}\' "
     query += "RETURNING *"
     connectAndQuery(query)
 
@@ -464,16 +443,16 @@ def quitMakingTips():
     setState("selecting game")
 
 def saveFavorites():
-    print(f"saving {setSkillLevel.get()} and {setCharacter.get()} as favorites")
+    print(f"saving {setCharacter.get()} as favorite")
     
-    #https://stackoverflow.com/questions/4710067/how-to-delete-a-specific-line-in-a-file
+    # https://stackoverflow.com/questions/4710067/how-to-delete-a-specific-line-in-a-file
     with open("localFavorites.txt", "r") as f:
         lines = f.readlines()
     with open("localFavorites.txt", "w") as f:
         for line in lines:
             if json.loads(line)["Game"] != setGame.get():
                 f.write(line)
-        newFavorite = "{\"Game\":\"" + setGame.get() + "\", \"SkillLevel\":\"" + setSkillLevel.get() + "\", \"Favorite Character\":\"" + setCharacter.get() +"\"}\n"
+        newFavorite = "{\"Game\":\"" + setGame.get() + "\", Favorite Character\":\"" + setCharacter.get() +"\"}\n"
         f.write(newFavorite)
 
     
@@ -587,7 +566,7 @@ quitMakingTipsButton = Button(win, text = "finish making tips", fg = "black",
                              command = quitMakingTips)
 buttons.append(quitMakingTipsButton)
 
-saveFavoritesButton = Button(win, text = "save as favorites", fg = "black",
+saveFavoritesButton = Button(win, text = "save as favorite", fg = "black",
                              command = saveFavorites)
 buttons.append(saveFavoritesButton)
 
@@ -635,13 +614,6 @@ setMap.set("select map")
 dropMap = OptionMenu(win, setMap, *maps)
 buttons.append(dropMap)
 
-# allow user to select skill level from a dropdown
-setSkillLevel = StringVar()
-setSkillLevel.set("select skill level")
-
-dropSkill = OptionMenu(win, setSkillLevel, *skillLevels)
-buttons.append(dropSkill)
-
 setCharacter = StringVar()
 setCharacter.set("select character")
 
@@ -660,11 +632,6 @@ def checkMapSelected(*args):
     confirmMapButton["state"] = ACTIVE
 
 setMap.trace('w', checkMapSelected)
-
-def checkSkillSelected(*args):
-    confirmPreferencesButton["state"] = ACTIVE
-
-setSkillLevel.trace('w', checkSkillSelected)
 
 def checkCharSelected(*args):
     confirmPreferencesButton["state"] = ACTIVE

@@ -1,3 +1,3 @@
-{"Game":"DOOM", "SkillLevel":"Ultra Nightmare", "Favorite Character":"select character"}
-{"Game":"Rainbow 6 Siege", "SkillLevel":"COPPER", "Favorite Character":"FINKA"}
-{"Game":"Valorant", "SkillLevel":"beginner", "Favorite Character":"breach"}
+{"Game":"DOOM", "Favorite Character":"select character"}
+{"Game":"Rainbow 6 Siege", "Favorite Character":"FINKA"}
+{"Game":"Valorant", Favorite Character":"sova"}
