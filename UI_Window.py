@@ -8,6 +8,7 @@ import psycopg2
 import pyautogui
 import numpy as np
 import urllib.request
+import math
 from PIL import Image, ImageTk, ImageGrab
 import json
 from googleapiclient.discovery import build
@@ -17,7 +18,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 currState = "selecting game"
 loggedInUser = None
 seenTips = []
-
 
 # for any new button, pack when it should be there, and pack_forget in all others
 def setState(newState):
@@ -88,6 +88,7 @@ def setState(newState):
         dropRating.pack()
         matchOverButton.pack()
         matchOverButton["state"] = ACTIVE
+        ratingLabel.pack()
         
         canvas.pack()
 
@@ -207,6 +208,8 @@ global currTipText
 global img
 global canvas
 global following
+global ratingAverage
+ratingAverage = 2.3
 canvas = Canvas(win, width = 1000, height = 100)
 buttons.append(canvas)
 currTipText = canvas.create_text(333, 50, text="", fill="black", font=('Helvetica 12'), width = 333)
@@ -250,6 +253,10 @@ inputTipText = Entry(win, textvariable= inputTipTextStr)
 inputTipText.insert(0, "Default Tip Info")
 buttons.append(inputTipText)
 
+ratingLabel = Label(win, text = "rating: " + str(ratingAverage))
+ratingLabel.place(x=400, y=300)
+buttons.append(ratingLabel)
+
 inputUserStr = StringVar()
 inputUser = Entry(win, textvariable= inputUserStr)
 inputUser.insert(0, "Type username EXACTLY")
@@ -262,7 +269,7 @@ def getTips(mapName):
     query = f"SELECT * FROM tips LEFT JOIN maps ON map = mapid LEFT JOIN characters ON charid = character WHERE (name(maps) = \'{mapName}\' OR name(maps) IS NULL) "
     if(charSelected):
         query += f"AND (name(characters) = \'{setCharacter.get()}\' OR name(characters) IS NULL) "
-    query += "ORDER BY map NULLS FIRST, character NULLS FIRST, level NULLS FIRST"
+    query += "ORDER BY map NULLS FIRST, character NULLS FIRST"
     listOfTips = connectAndQuery(query)
     listOfTips.reverse()
     # for tip in listOfTips:
@@ -311,7 +318,7 @@ def findMatch():
 
 # user has found a match and did not get a tip
 def matchFound():
-    print("oops, which map was it?")
+    print("Which map was it?")
     setState("map missed")
 
 # when user goes to the site (home page by default, tip page if a tip is active)
@@ -334,11 +341,7 @@ def confirmMap():
     print("map confirmed")
     thread._is_stopped = True
     getTips(setMap.get())
-    currTip = listOfTips.pop()
-    webSiteLink.set(currTip[6])
-    titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
-    global currTipText
-    canvas.itemconfig(currTipText, text=currTip[1])
+    nextTip()
 
     setState("in a match")
 
@@ -392,7 +395,6 @@ def selectGame():
 # do all logic when match is over
 def matchOver():
     print("GG")
-    nextTipButton.pack_forget()
     setState("waiting in menu")
 
 # confirmation button to set preferences
@@ -506,7 +508,7 @@ def retrieveSeenTips():
 def confirmRating():
     print("Thank you for rating this tip!")
     confirmRatingButton["state"] = DISABLED
-    query = f"INSERT INTO ratings VALUES({loggedInUser[0]}, {setRating.get()}, {currTip[7]}) ON CONFLICT(rater, tip) DO UPDATE SET rating = {setRating.get()} RETURNING *"
+    query = f"INSERT INTO ratings VALUES({loggedInUser[0]}, {setRating.get()}, {currTip[6]}) ON CONFLICT(rater, tip) DO UPDATE SET rating = {setRating.get()} RETURNING *"
     connectAndQuery(query)
 
 def followUser():
@@ -553,9 +555,11 @@ def startAutoDetect():
         thread = threading.Thread(target = ocrStuff, args = ())
         thread.start()
 listOfSeenTips = []
+
 def nextTip():
     global currTipText
     global seenTips
+    global ratingAverage
     currTip = None
     while len(listOfTips) > 0:
         currTip = listOfTips.pop()
@@ -568,10 +572,16 @@ def nextTip():
     
     if currTip is None and len(listOfSeenTips) > 0:
         currTip = listOfSeenTips.pop()
+        return
     elif currTip is None: 
-        currTip = ["There is no more tips!!!"] + [None]*10
+        currTip = ["There are no more tips!!!"] + [None]*10
+        return
 
-    webSiteLink.set(currTip[6])
+    print(currTip)
+    ratingQuery = f"SELECT avg(rating) FROM ratings WHERE tip = {currTip[6]}"
+    ratingAverage = connectAndQuery(ratingQuery)
+    ratingLabel.config(text = "overall rating: " + str(round(ratingAverage[0][0], 2)))
+    webSiteLink.set(currTip[5])
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
     if currTip[1] == None:
         canvas.itemconfig(currTipText, text="")
@@ -657,6 +667,7 @@ buttons.append(startAutoDetectButton)
 
 nextTipButton = Button(win, text = "get a different tip", fg = "red",
                             command = nextTip)
+buttons.append(nextTipButton)
 
 ratings = [1,2,3,4,5]
 setRating = StringVar()
