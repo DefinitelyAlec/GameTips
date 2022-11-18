@@ -41,6 +41,7 @@ def setState(newState):
         loginButton["state"] = ACTIVE
         followUserButton.pack()
         followUserButton["state"] = DISABLED
+        uploadGameButton.pack()
         titleText.set("Welcome to Intuitive Intel!")
 
         dropGame.pack()
@@ -108,6 +109,15 @@ def setState(newState):
         searchForUserButton.pack()
         confirmUserButton.pack()
         confirmUserButton["state"] = DISABLED
+        selectGameButton.pack()
+
+    elif newState == "uploading game":
+        inputGameText.pack()
+        uploadToDBButton.pack()
+        inputCharText.pack()
+        addCharacterToGameButton.pack()
+        inputMapText.pack()
+        addMapToGameButton.pack()
         selectGameButton.pack()
         
 
@@ -261,6 +271,21 @@ inputUserStr = StringVar()
 inputUser = Entry(win, textvariable= inputUserStr)
 inputUser.insert(0, "Type username EXACTLY")
 buttons.append(inputUser)
+
+inputGameStr = StringVar()
+inputGameText = Entry(win, textvariable= inputGameStr)
+inputGameText.insert(0, "Type game name")
+buttons.append(inputGameText)
+
+inputCharStr = StringVar()
+inputCharText = Entry(win, textvariable= inputCharStr)
+inputCharText.insert(0, "Type character name")
+buttons.append(inputCharText)
+
+inputMapStr = StringVar()
+inputMapText = Entry(win, textvariable= inputMapStr)
+inputMapText.insert(0, "Type map name")
+buttons.append(inputMapText)
 
 def getTips(mapName):
     global listOfTips
@@ -588,6 +613,29 @@ def nextTip():
     else:
         canvas.itemconfig(currTipText, text=currTip[1])
 
+def uploadGame():
+    print("what game would you like people to make tips for?")
+    setState("uploading game")
+
+global currGame
+
+def uploadToDB():
+    global currGame
+    # TODO: add date feature
+    query = f"INSERT INTO games VALUES(\'{inputGameStr.get()}\', \'1970-01-01\') RETURNING *"
+    currGame = connectAndQuery(query)[0]
+
+def addCharacterToGame():
+    global currGame
+    print(currGame[2])
+    query = f"INSERT INTO characters VALUES(\'{inputCharStr.get()}\', {currGame[2]}) RETURNING *"
+    connectAndQuery(query)
+
+def addMapToGame():
+    global currGame
+    query = f"INSERT INTO maps VALUES(\'{inputMapStr.get()}\', {currGame[2]}) RETURNING *"
+    connectAndQuery(query)
+
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
                         command = findMatch)
@@ -668,6 +716,20 @@ buttons.append(startAutoDetectButton)
 nextTipButton = Button(win, text = "get a different tip", fg = "red",
                             command = nextTip)
 buttons.append(nextTipButton)
+
+uploadGameButton = Button(win, text= "upload a new game", fg = "black",
+                            command=uploadGame)
+buttons.append(uploadGameButton)
+
+uploadToDBButton = Button(win, text= "upload a new game", fg = "black",
+                            command=uploadToDB)
+buttons.append(uploadToDBButton)
+
+addCharacterToGameButton = Button(win, text = "add a character", fg = "black",
+                            command = addCharacterToGame)
+
+addMapToGameButton = Button(win, text = "upload map to game", fg = "black",
+                            command= addMapToGame)
 
 ratings = [1,2,3,4,5]
 setRating = StringVar()
