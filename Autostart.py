@@ -33,7 +33,6 @@ games = []
 for value in connectAndQuery("SELECT name FROM games"):
     games.append(value[0].replace(" ", "").strip())
 gameNotFound = True
-print (games)
 while gameNotFound:
     sleep(1)
     for p in process_iter(attrs=['name']):
@@ -50,13 +49,12 @@ import tkinter
 top =  tkinter.Tk()
 top.geometry("150x150")
 top.attributes('-topmost',True)
+top.withdraw()
 path = argv[1]
 print(f"running: {path}")
 answer = messagebox.askyesno("Question","Do you want to run Intuitive Intel?")
+top.destroy()
 
 if answer:
     
     run_path(path_name=path)
-
-
-top.mainloop()
