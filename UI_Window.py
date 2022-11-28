@@ -294,9 +294,18 @@ def getTips(mapName):
     query = f"SELECT * FROM tips LEFT JOIN maps ON map = mapid LEFT JOIN characters ON charid = character WHERE (name(maps) = \'{mapName}\' OR name(maps) IS NULL) "
     if(charSelected):
         query += f"AND (name(characters) = \'{setCharacter.get()}\' OR name(characters) IS NULL) "
-    query += "ORDER BY map NULLS FIRST, character NULLS FIRST"
+    query += " ORDER BY map NULLS FIRST, character NULLS FIRST"
+    if(following != None):
+        print("following is not null")
+        query += ", CASE "
+        for creator in following:
+            print(f"creator is not null, it's {creator}" )
+            print(f"and this creator[0] is {creator[0]}")
+            query += f" WHEN CREATOR = {creator[0]} THEN 0 "
+        query += " ELSE 3 END"
+        
+    print(query)
     listOfTips = connectAndQuery(query)
-    listOfTips.reverse()
     # for tip in listOfTips:
     #     print(tip)
 
@@ -377,30 +386,16 @@ def getFollowing():
     query = f"SELECT creator from followers where follower = {loggedInUser[0]}"
     following = connectAndQuery(query)
 
-def queryForGetGame():
-    global dropMap
-    global dropCharacter
-    global following
-
-    getMaps()
-    getChars()
-    getFollowing()
-
-
-
 # use game selected in dropdown
 def confirmGame():
-    global thread
     global dropMap
     global dropCharacter
 
     setCharacter.set("select character")
 
-    if thread._started:
-        thread = threading.Thread(target = queryForGetGame, args = ())
-        thread.start()
-
-    queryForGetGame()
+    getMaps()
+    getChars()
+    getFollowing()
     loadFavorites(setGame.get())
 
     buttons.remove(dropMap)
@@ -453,7 +448,7 @@ def postTip():
         query += ", character"
     if mapSelected:
         query += ", map"
-    query += f") SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', {loggedInUser[0]}"
+    query += f", game) SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', {loggedInUser[0]}"
     if charSelected:
         query += ", charid"
     if mapSelected:
@@ -477,6 +472,7 @@ def postTip():
                 query += "AND "
         if mapSelected:
             query += f"name(m) = \'{setMap.get()}\' "
+    query += currGame[2]
     query += "RETURNING *"
     connectAndQuery(query)
 
@@ -605,7 +601,8 @@ def nextTip():
     print(currTip)
     ratingQuery = f"SELECT avg(rating) FROM ratings WHERE tip = {currTip[6]}"
     ratingAverage = connectAndQuery(ratingQuery)
-    ratingLabel.config(text = "overall rating: " + str(round(ratingAverage[0][0], 2)))
+    if(ratingAverage[0][0] != None):
+        ratingLabel.config(text = "overall rating: " + str(round(ratingAverage[0][0], 2)))
     webSiteLink.set(currTip[5])
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
     if currTip[1] == None:
