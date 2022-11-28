@@ -176,10 +176,20 @@ def loginHelper():
     possibleUser = connectAndQuery(f"SELECT * FROM users WHERE email = \'" + googleUser["email"] + "\'")
     if possibleUser != None and len(possibleUser) > 0:
         global loggedInUser
-        loggedInUser = possibleUser[0]
+        print(possibleUser)
+        loggedInUser = {
+           "userid" :  possibleUser[0][0],
+           "username" : possibleUser[0][1],
+           "email" : possibleUser[0][2],
+           "imgurl" : possibleUser[0][3]
+        }
         followUserButton["state"] = ACTIVE
         checkGameSelected()
     else: 
+        global currTipText
+        global canvas
+        loginButton["state"] = ACTIVE
+        canvas.itemconfig(currTipText, text="No account found with that email.")
         print("No account found with that email.")
     retrieveSeenTips()
 
@@ -340,9 +350,8 @@ def ocrStuff():
     getTips(setMap.get())
     currTip = listOfTips.pop()
     titleText.set("Map found: " + resultMap + "\nTip: " + currTip[0])
-    global currTipText
-    canvas.itemconfig(currTipText, text=currTip[1])
     setState("in a match")
+    nextTip()
 
     return resultMap
 
@@ -383,7 +392,8 @@ def getFollowing():
     global following
     if(loggedInUser == None):
         return
-    query = f"SELECT creator from followers where follower = {loggedInUser[0]}"
+    uid = loggedInUser["userid"]
+    query = f"SELECT creator from followers where follower = {uid}"
     following = connectAndQuery(query)
 
 # use game selected in dropdown
@@ -498,21 +508,24 @@ def saveSeenTips():
     global loggedInUser
     if loggedInUser is None:
         return
-    lines = open('seenTips.txt','r').readlines()
+    lines = open('userInfo.txt','r').readlines()
     oldUserLog = {}
-    with open('seenTips.txt','w') as jsonFile:
+    with open('userInfo.txt','w') as jsonFile:
         for line in lines:
             jsonLine = json.loads(line)
-            if jsonLine["userid"] != loggedInUser[0]:
+            if jsonLine["userid"] != loggedInUser["userid"]:
                 jsonFile.write(line)
             else:
                 oldUserLog = jsonLine
+        if oldUserLog == {}:
+            oldUserLog = loggedInUser
         newUserLog = oldUserLog
         tipids = newUserLog.get("tipids", [])
         for tipid in seenTips:
             if tipid not in tipids:
                 tipids.append(tipid)
         newUserLog["tipids"] = tipids
+        print(newUserLog)
         jsonFile.write(json.dumps(newUserLog))
 
 def retrieveSeenTips():
@@ -520,16 +533,17 @@ def retrieveSeenTips():
     global seenTips
     if loggedInUser is None:
         return
-    for line in open('seenTips.txt','r').readlines():
+    for line in open('userInfo.txt','r').readlines():
         jsonLine = json.loads(line)
-        if jsonLine["userid"] == loggedInUser[0]:
+        if jsonLine["userid"] == loggedInUser["userid"]:
             seenTips = jsonLine["tipids"]
             return
     
 def confirmRating():
     print("Thank you for rating this tip!")
     confirmRatingButton["state"] = DISABLED
-    query = f"INSERT INTO ratings VALUES({loggedInUser[0]}, {setRating.get()}, {currTip[6]}) ON CONFLICT(rater, tip) DO UPDATE SET rating = {setRating.get()} RETURNING *"
+    uid = loggedInUser["userid"]
+    query = f"INSERT INTO ratings VALUES({uid}, {setRating.get()}, {currTip[6]}) ON CONFLICT(rater, tip) DO UPDATE SET rating = {setRating.get()} RETURNING *"
     connectAndQuery(query)
 
 def followUser():
@@ -541,7 +555,8 @@ def searchForUser():
     query = f"SELECT * FROM users where username = \'{inputUserStr.get()}\'" 
     result = connectAndQuery(query) # one user if this userrname exists
     try:
-        query = f"SELECT * FROM followers where follower = {loggedInUser[0]} AND creator = {result[0][0]}"
+        uid = loggedInUser["userid"]
+        query = f"SELECT * FROM followers where follower = {uid} AND creator = {result[0][0]}"
         result = connectAndQuery(query) # one result if user is following, zero if user is not following
         try:
             # user is already following
@@ -566,7 +581,8 @@ def confirmUnfollowUser():
     confirmUserButton["state"] = DISABLED
     
 def confirmFollowUser():
-    query = f"INSERT INTO followers SELECT {loggedInUser[0]}, u.user_id from users as u where u.username = \'{inputUserStr.get()}\' returning *"
+    uid = loggedInUser["userid"]
+    query = f"INSERT INTO followers SELECT {uid}, u.user_id from users as u where u.username = \'{inputUserStr.get()}\' returning *"
     connectAndQuery(query)
     confirmUserButton["state"] = DISABLED
 
@@ -593,22 +609,22 @@ def nextTip():
     
     if currTip is None and len(listOfSeenTips) > 0:
         currTip = listOfSeenTips.pop()
-        return
     elif currTip is None: 
         currTip = ["There are no more tips!!!"] + [None]*10
+        canvas.itemconfig(currTipText, text="")
+        titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
         return
 
     print(currTip)
     ratingQuery = f"SELECT avg(rating) FROM ratings WHERE tip = {currTip[6]}"
     ratingAverage = connectAndQuery(ratingQuery)
-    if(ratingAverage[0][0] != None):
+    if ratingAverage[0][0] is not None:
         ratingLabel.config(text = "overall rating: " + str(round(ratingAverage[0][0], 2)))
+    else:
+        ratingLabel.config(text = "overall rating: No rating yet")
     webSiteLink.set(currTip[5])
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
-    if currTip[1] == None:
-        canvas.itemconfig(currTipText, text="")
-    else:
-        canvas.itemconfig(currTipText, text=currTip[1])
+    canvas.itemconfig(currTipText, text=currTip[1])
 
 def uploadGame():
     print("what game would you like people to make tips for?")
