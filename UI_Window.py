@@ -34,14 +34,14 @@ def setState(newState):
         moreInfoButton.pack()
         moreInfoButton["state"] = ACTIVE
         confirmGameButton.pack()
-        confirmGameButton["state"] = DISABLED # starts disabled in this state, wait until an option is selected in dropgame via trace
         createTipButton.pack()
-        createTipButton["state"] = DISABLED
         loginButton.pack()
         loginButton["state"] = ACTIVE
         followUserButton.pack()
         followUserButton["state"] = DISABLED
         uploadGameButton.pack()
+        editExistingGameButton.pack()
+        editExistingGameButton["state"] = DISABLED
         titleText.set("Welcome to Intuitive Intel!")
 
         dropGame.pack()
@@ -119,7 +119,13 @@ def setState(newState):
         inputMapText.pack()
         addMapToGameButton.pack()
         selectGameButton.pack()
-        
+
+    elif newState == "editing existing game":
+        inputCharText.pack()
+        addCharacterToGameButton.pack()
+        inputMapText.pack()
+        addMapToGameButton.pack()
+        selectGameButton.pack()
 
 # Wrapper for any query to db
 def connectAndQuery(query):
@@ -147,12 +153,12 @@ def connectAndQuery(query):
 
 def loadFavorites(game):
     favorites = open("localFavorites.txt")
-    currGame = "not a game"
-    while currGame != game:
+    potentialGame = "not a game"
+    while potentialGame != game:
         nextLine = favorites.readline()
         if nextLine != "":
             currLine = json.loads(nextLine)
-            currGame = currLine["Game"]
+            potentialGame = currLine["Game"]
         else:
             return
     setCharacter.set(currLine["Favorite Character"])
@@ -458,7 +464,7 @@ def postTip():
         query += ", character"
     if mapSelected:
         query += ", map"
-    query += f", game) SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', {loggedInUser[0]}"
+    query += f", game) SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', {loggedInUser['userid']}"
     if charSelected:
         query += ", charid"
     if mapSelected:
@@ -482,7 +488,7 @@ def postTip():
                 query += "AND "
         if mapSelected:
             query += f"name(m) = \'{setMap.get()}\' "
-    query += currGame[2]
+    query += currGame[1]
     query += "RETURNING *"
     connectAndQuery(query)
 
@@ -634,20 +640,24 @@ global currGame
 
 def uploadToDB():
     global currGame
-    # TODO: add date feature
-    query = f"INSERT INTO games VALUES(\'{inputGameStr.get()}\', \'1970-01-01\') RETURNING *"
+    query = f"INSERT INTO games VALUES(\'{inputGameStr.get()}\') RETURNING *"
     currGame = connectAndQuery(query)[0]
 
 def addCharacterToGame():
     global currGame
-    print(currGame[2])
-    query = f"INSERT INTO characters VALUES(\'{inputCharStr.get()}\', {currGame[2]}) RETURNING *"
+    query = f"INSERT INTO characters VALUES(\'{inputCharStr.get()}\', {currGame[0][1]}) RETURNING *"
     connectAndQuery(query)
 
 def addMapToGame():
     global currGame
-    query = f"INSERT INTO maps VALUES(\'{inputMapStr.get()}\', {currGame[2]}) RETURNING *"
+    query = f"INSERT INTO maps VALUES(\'{inputMapStr.get()}\', {currGame[0][1]}) RETURNING *"
     connectAndQuery(query)
+
+def editExistingGame():
+    global currGame
+    query = f"SELECT * FROM games WHERE name = \'{setGame.get()}\'"
+    currGame = connectAndQuery(query)
+    setState("editing existing game")
 
 # add buttons
 findingMatchButton = Button(win, text = "finding a match!", fg = "green",
@@ -740,9 +750,15 @@ buttons.append(uploadToDBButton)
 
 addCharacterToGameButton = Button(win, text = "add a character", fg = "black",
                             command = addCharacterToGame)
+buttons.append(addCharacterToGameButton)
 
 addMapToGameButton = Button(win, text = "upload map to game", fg = "black",
                             command= addMapToGame)
+buttons.append(addMapToGameButton)
+
+editExistingGameButton = Button(win, text = "edit an existing game", fg = "black",
+                            command= editExistingGame)
+buttons.append(editExistingGameButton)
 
 ratings = [1,2,3,4,5]
 setRating = StringVar()
@@ -775,14 +791,17 @@ buttons.append(dropCharacter)
 def checkGameSelected(*args):
     if setGame.get() != "select game":
         confirmGameButton["state"] = ACTIVE
+        editExistingGameButton["state"] = ACTIVE
         if loggedInUser != None:
             createTipButton["state"] = ACTIVE
 
 setGame.trace('w', checkGameSelected)
 
-# TODO: make some more robust logic here
 def checkMapSelected(*args):
-    confirmMapButton["state"] = ACTIVE
+    if setMap.get() != "select map":
+        confirmMapButton["state"] = DISABLED
+    else:
+        confirmMapButton["state"] = ACTIVE
 
 setMap.trace('w', checkMapSelected)
 
@@ -803,6 +822,7 @@ thread._stop = threading.Event()
 #displayImage()
 
 setState("selecting game")
+confirmGameButton["state"] = DISABLED
 retrieveSeenTips()
 
 win.mainloop()
