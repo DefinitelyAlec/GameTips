@@ -100,7 +100,7 @@ def setState(newState):
         inputTipText.pack()
         postTipButton.pack()
         quitMakingTipsButton.pack()
-        
+        titleText.set(f"What cool tip have you got for us?")
         dropMap.pack()
         dropCharacter.pack()
         
@@ -110,6 +110,7 @@ def setState(newState):
         confirmUserButton.pack()
         confirmUserButton["state"] = DISABLED
         selectGameButton.pack()
+        titleText.set(f"Please type the username exactly")
 
     elif newState == "uploading game":
         inputGameText.pack()
@@ -119,6 +120,7 @@ def setState(newState):
         inputMapText.pack()
         addMapToGameButton.pack()
         selectGameButton.pack()
+        titleText.set(f"What game should we add to the database?")
 
     elif newState == "editing existing game":
         inputCharText.pack()
@@ -126,6 +128,7 @@ def setState(newState):
         inputMapText.pack()
         addMapToGameButton.pack()
         selectGameButton.pack()
+        titleText.set(f"What is missing from {setGame.get()}?")
 
 # Wrapper for any query to db
 def connectAndQuery(query):
@@ -748,11 +751,11 @@ uploadToDBButton = Button(win, text= "upload a new game", fg = "black",
                             command=uploadToDB)
 buttons.append(uploadToDBButton)
 
-addCharacterToGameButton = Button(win, text = "add a character", fg = "black",
+addCharacterToGameButton = Button(win, text = "add character", fg = "black",
                             command = addCharacterToGame)
 buttons.append(addCharacterToGameButton)
 
-addMapToGameButton = Button(win, text = "upload map to game", fg = "black",
+addMapToGameButton = Button(win, text = "add map", fg = "black",
                             command= addMapToGame)
 buttons.append(addMapToGameButton)
 
