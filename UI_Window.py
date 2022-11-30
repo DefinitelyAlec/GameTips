@@ -32,16 +32,16 @@ def setState(newState):
 
     if newState == "selecting game":
         moreInfoButton.pack()
-        moreInfoButton["state"] = ACTIVE
         confirmGameButton.pack()
         createTipButton.pack()
         loginButton.pack()
-        loginButton["state"] = ACTIVE
         followUserButton.pack()
-        followUserButton["state"] = DISABLED
+        if loggedInUser == None:
+            followUserButton["state"] = DISABLED
         uploadGameButton.pack()
         editExistingGameButton.pack()
-        editExistingGameButton["state"] = DISABLED
+        if setGame.get() == "select game":
+            editExistingGameButton["state"] = DISABLED
         titleText.set("Welcome to Intuitive Intel!")
 
         dropGame.pack()
@@ -49,11 +49,8 @@ def setState(newState):
     elif newState == "waiting in menu":
         titleText.set(f"Good luck in {setGame.get()}")
         findingMatchButton.pack()
-        findingMatchButton["state"] = ACTIVE
         moreInfoButton.pack()
-        moreInfoButton["state"] = ACTIVE
         selectGameButton.pack()
-        selectGameButton["state"] = ACTIVE
         confirmPreferencesButton.pack()
         confirmPreferencesButton["state"] = DISABLED
         dropCharacter.pack()
@@ -62,18 +59,14 @@ def setState(newState):
         
     elif newState == "waiting in queue":
         matchMissedButton.pack()
-        matchMissedButton["state"] = ACTIVE
         moreInfoButton.pack()
-        moreInfoButton["state"] = ACTIVE
         cancelSearchButton.pack()
         cancelSearchButton["state"] = ACTIVE
         startAutoDetectButton.pack()
 
     elif newState == "map missed":
         matchMissedButton.pack()
-        matchMissedButton["state"] = ACTIVE
         moreInfoButton.pack()
-        moreInfoButton["state"] = ACTIVE
         cancelSearchButton.pack()
         cancelSearchButton["state"] = DISABLED
         confirmMapButton.pack()
@@ -83,12 +76,10 @@ def setState(newState):
         
     elif newState == "in a match":
         moreInfoButton.pack()
-        moreInfoButton["state"] = ACTIVE
         nextTipButton.pack()
         confirmRatingButton.pack()
         dropRating.pack()
         matchOverButton.pack()
-        matchOverButton["state"] = ACTIVE
         ratingLabel.pack()
         
         canvas.pack()
@@ -355,7 +346,6 @@ def ocrStuff():
             return
     print(resultMap)
     cancelSearchButton["state"] = "disabled"
-    findingMatchButton["state"] = "active"
     getTips(setMap.get())
     currTip = listOfTips.pop()
     titleText.set("Map found: " + resultMap + "\nTip: " + currTip[0])
@@ -631,7 +621,8 @@ def nextTip():
         ratingLabel.config(text = "overall rating: " + str(round(ratingAverage[0][0], 2)))
     else:
         ratingLabel.config(text = "overall rating: No rating yet")
-    webSiteLink.set(currTip[5])
+    #TODO: reset the link once alec is done
+    webSiteLink.set(f"")
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
     canvas.itemconfig(currTipText, text=currTip[1])
 
