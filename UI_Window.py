@@ -70,7 +70,10 @@ def setState(newState):
         moreInfoButton.pack()
         cancelSearchButton.pack()
         confirmMapButton.pack()
-        confirmMapButton["state"] = DISABLED
+        if setMap.get() == "select map":
+            confirmMapButton["state"] = DISABLED
+        else:
+            confirmMapButton["state"] = ACTIVE
 
         dropMap.pack()
         
@@ -816,7 +819,7 @@ def checkRatingSelected(*args):
     if loggedInUser != None:
         confirmRatingButton["state"] = ACTIVE
     else:
-        loggedInUser["text"] = "Please login to rate"
+        confirmRatingButton["text"] = "Please login to rate"
 
 setRating.trace('w', checkRatingSelected)
 
