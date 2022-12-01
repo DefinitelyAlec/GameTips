@@ -31,44 +31,44 @@ def setState(newState):
         button.place_forget()
 
     if newState == "selecting game":
+        loginButton.pack()
         moreInfoButton.pack()
         confirmGameButton.pack()
-        createTipButton.pack()
-        loginButton.pack()
         followUserButton.pack()
+        createTipButton.pack()
+        editExistingGameButton.pack()
+        uploadGameButton.pack()
         if loggedInUser == None:
             followUserButton["state"] = DISABLED
-        uploadGameButton.pack()
-        editExistingGameButton.pack()
+            createTipButton["state"] = DISABLED
         if setGame.get() == "select game":
+            confirmGameButton["state"] = DISABLED
             editExistingGameButton["state"] = DISABLED
-        titleText.set("Welcome to Intuitive Intel!")
 
+        titleText.set("Welcome to Intuitive Intel!")
         dropGame.pack()
 
     elif newState == "waiting in menu":
         titleText.set(f"Good luck in {setGame.get()}")
         findingMatchButton.pack()
         moreInfoButton.pack()
-        selectGameButton.pack()
         confirmPreferencesButton.pack()
-        confirmPreferencesButton["state"] = DISABLED
         dropCharacter.pack()
-
         saveFavoritesButton.pack()
+        selectGameButton.pack()
+        confirmPreferencesButton["state"] = DISABLED
+        saveFavoritesButton["state"] = DISABLED
         
     elif newState == "waiting in queue":
         matchMissedButton.pack()
         moreInfoButton.pack()
-        cancelSearchButton.pack()
-        cancelSearchButton["state"] = ACTIVE
         startAutoDetectButton.pack()
+        cancelSearchButton.pack()
 
     elif newState == "map missed":
         matchMissedButton.pack()
         moreInfoButton.pack()
         cancelSearchButton.pack()
-        cancelSearchButton["state"] = DISABLED
         confirmMapButton.pack()
         confirmMapButton["state"] = DISABLED
 
@@ -174,6 +174,7 @@ def loginHelper():
     service = get_authenticated_login_service()
     googleUser = service.userinfo().get().execute()
     possibleUser = connectAndQuery(f"SELECT * FROM users WHERE email = \'" + googleUser["email"] + "\'")
+    loginButton["text"] = "switch account"
     if possibleUser != None and len(possibleUser) > 0:
         global loggedInUser
         print(possibleUser)
@@ -188,13 +189,11 @@ def loginHelper():
     else: 
         global currTipText
         global canvas
-        loginButton["state"] = ACTIVE
         canvas.itemconfig(currTipText, text="No account found with that email.")
         print("No account found with that email.")
     retrieveSeenTips()
 
 def login():
-    loginButton["state"] = DISABLED
     global thread
     if thread._started:
         thread = threading.Thread(target = loginHelper, args = (), )
@@ -225,11 +224,11 @@ win.attributes('-topmost',True)
 global currTip
 global listOfTips
 global currTipText
-global img
 global canvas
 global following
 global ratingAverage
-ratingAverage = 2.3
+following = None
+ratingAverage = 0.0
 canvas = Canvas(win, width = 1000, height = 100)
 buttons.append(canvas)
 currTipText = canvas.create_text(333, 50, text="", fill="black", font=('Helvetica 12'), width = 333)
@@ -299,6 +298,7 @@ buttons.append(inputMapText)
 
 def getTips(mapName):
     global listOfTips
+    global following
     charSelected = setCharacter.get() != "select character"
 
     query = f"SELECT * FROM tips LEFT JOIN maps ON map = mapid LEFT JOIN characters ON charid = character WHERE (name(maps) = \'{mapName}\' OR name(maps) IS NULL) "
@@ -316,8 +316,6 @@ def getTips(mapName):
         
     print(query)
     listOfTips = connectAndQuery(query)
-    # for tip in listOfTips:
-    #     print(tip)
 
 def ocrStuff():
     global img
@@ -345,7 +343,6 @@ def ocrStuff():
             print("thread successfully cancelled")
             return
     print(resultMap)
-    cancelSearchButton["state"] = "disabled"
     getTips(setMap.get())
     currTip = listOfTips.pop()
     titleText.set("Map found: " + resultMap + "\nTip: " + currTip[0])
@@ -450,6 +447,7 @@ def createTip():
 def postTip():
     charSelected = setCharacter.get() != "select character"
     mapSelected = setMap.get() != "select map"
+    currGame = connectAndQuery(f"SELECT * FROM games WHERE name = \'{setGame.get()}\'")[0]
 
     print("This tip will help many other gamers now :)")
     query = "INSERT INTO tips(title, explanation, creator"
@@ -462,27 +460,27 @@ def postTip():
         query += ", charid"
     if mapSelected:
         query += ", mapid"
+    query += f", gameid FROM games g "
 
     if charSelected or mapSelected:
-        query += " FROM "
-
+        query += "JOIN "
         if charSelected:
-            query += "characters c "
+            query += "characters c ON game(c) = gameid(g) "
             if mapSelected:
                 query += "JOIN "
         if mapSelected:
-            query += "maps m "
-            if charSelected:
-                query += "ON game(c) = game(m) "
-        query += "WHERE "
+            query += "maps m ON gameid(g) = game(m) "
+    query += f"WHERE name(g) = \'{setGame.get()}\' "
+    if charSelected or mapSelected:
+        query += "AND "
         if charSelected:
             query += f"name(c) = \'{setCharacter.get()}\' "
             if mapSelected:
                 query += "AND "
         if mapSelected:
             query += f"name(m) = \'{setMap.get()}\' "
-    query += currGame[1]
     query += "RETURNING *"
+    print(query)
     connectAndQuery(query)
 
 def quitMakingTips():
@@ -501,6 +499,7 @@ def saveFavorites():
         for line in lines:
             if json.loads(line)["Game"] != setGame.get():
                 f.write(line)
+    saveFavoritesButton["state"] = DISABLED
 
 def saveSeenTips():
     global seenTips
@@ -686,7 +685,7 @@ selectGameButton = Button(win, text = "switch game", fg = "green",
                           command = selectGame)
 buttons.append(selectGameButton)
 
-matchOverButton = Button(win, text = "match over, clear tip", fg = "black",
+matchOverButton = Button(win, text = "match over", fg = "black",
                              command = matchOver)
 buttons.append(matchOverButton)
 
@@ -750,7 +749,7 @@ addMapToGameButton = Button(win, text = "add map", fg = "black",
                             command= addMapToGame)
 buttons.append(addMapToGameButton)
 
-editExistingGameButton = Button(win, text = "edit an existing game", fg = "black",
+editExistingGameButton = Button(win, text = "edit this game?", fg = "black",
                             command= editExistingGame)
 buttons.append(editExistingGameButton)
 
@@ -788,19 +787,27 @@ def checkGameSelected(*args):
         editExistingGameButton["state"] = ACTIVE
         if loggedInUser != None:
             createTipButton["state"] = ACTIVE
+    else:
+        confirmGameButton["state"] = DISABLED
+        editExistingGameButton["state"] = DISABLED
 
 setGame.trace('w', checkGameSelected)
 
 def checkMapSelected(*args):
     if setMap.get() != "select map":
-        confirmMapButton["state"] = DISABLED
-    else:
         confirmMapButton["state"] = ACTIVE
+    else:
+        confirmMapButton["state"] = DISABLED
 
 setMap.trace('w', checkMapSelected)
 
 def checkCharSelected(*args):
-    confirmPreferencesButton["state"] = ACTIVE
+    if setCharacter.get() != "select character":
+        confirmPreferencesButton["state"] = ACTIVE
+        saveFavoritesButton["state"] = ACTIVE
+    else:
+        confirmPreferencesButton["state"] = DISABLED
+        saveFavoritesButton["state"] = DISABLED
 
 setCharacter.trace('w', checkCharSelected)
 

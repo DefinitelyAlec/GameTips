@@ -1,3 +1,4 @@
-{"Game":"Valorant", "Favorite Character":"viper"}
+{"Game":"Valorant", "Favorite Character":"sage"}
+{"Game":"Rainbow Six Siege", "Favorite Character":"ZERO"}
 {"Game":"DOOM", "Favorite Character":"select character"}
 {"Game":"Rainbow 6 Siege", "Favorite Character":"FINKA"}
