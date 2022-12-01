@@ -81,7 +81,8 @@ def setState(newState):
         dropRating.pack()
         matchOverButton.pack()
         ratingLabel.pack()
-        
+        confirmRatingButton["state"] = DISABLED
+
         canvas.pack()
 
     elif newState == "creating tip": # for now you have to select game first
@@ -812,7 +813,10 @@ def checkCharSelected(*args):
 setCharacter.trace('w', checkCharSelected)
 
 def checkRatingSelected(*args):
-    confirmRatingButton["state"] = ACTIVE
+    if loggedInUser != None:
+        confirmRatingButton["state"] = ACTIVE
+    else:
+        loggedInUser["text"] = "Please login to rate"
 
 setRating.trace('w', checkRatingSelected)
 
