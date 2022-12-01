@@ -115,6 +115,8 @@ def setState(newState):
         inputMapText.pack()
         addMapToGameButton.pack()
         selectGameButton.pack()
+        addCharacterToGameButton["state"] = DISABLED
+        addMapToGameButton["state"] = DISABLED
         titleText.set(f"What game should we add to the database?")
 
     elif newState == "editing existing game":
@@ -639,6 +641,9 @@ def uploadToDB():
     global currGame
     query = f"INSERT INTO games VALUES(\'{inputGameStr.get()}\') RETURNING *"
     currGame = connectAndQuery(query)[0]
+    addCharacterToGameButton["state"] = ACTIVE
+    addMapToGameButton["state"] = ACTIVE
+    
 
 def addCharacterToGame():
     global currGame
