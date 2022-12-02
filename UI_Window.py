@@ -31,13 +31,14 @@ def setState(newState):
         button.place_forget()
 
     if newState == "selecting game":
-        loginButton.pack()
-        moreInfoButton.pack()
+        dropGame.pack()
         confirmGameButton.pack()
+        loginButton.pack()
         followUserButton.pack()
         createTipButton.pack()
         editExistingGameButton.pack()
         uploadGameButton.pack()
+        moreInfoButton.pack()
         if loggedInUser == None:
             followUserButton["state"] = DISABLED
             createTipButton["state"] = DISABLED
@@ -46,30 +47,29 @@ def setState(newState):
             editExistingGameButton["state"] = DISABLED
 
         titleText.set("Welcome to Intuitive Intel!")
-        dropGame.pack()
 
     elif newState == "waiting in menu":
         titleText.set(f"Good luck in {setGame.get()}")
         findingMatchButton.pack()
-        moreInfoButton.pack()
         confirmPreferencesButton.pack()
         dropCharacter.pack()
         saveFavoritesButton.pack()
         selectGameButton.pack()
+        moreInfoButton.pack()
         confirmPreferencesButton["state"] = DISABLED
         saveFavoritesButton["state"] = DISABLED
         
     elif newState == "waiting in queue":
         matchMissedButton.pack()
-        moreInfoButton.pack()
         startAutoDetectButton.pack()
         cancelSearchButton.pack()
+        moreInfoButton.pack()
 
     elif newState == "map missed":
         matchMissedButton.pack()
-        moreInfoButton.pack()
         cancelSearchButton.pack()
         confirmMapButton.pack()
+        moreInfoButton.pack()
         if setMap.get() == "select map":
             confirmMapButton["state"] = DISABLED
         else:
@@ -78,11 +78,11 @@ def setState(newState):
         dropMap.pack()
         
     elif newState == "in a match":
-        moreInfoButton.pack()
         nextTipButton.pack()
         confirmRatingButton.pack()
         dropRating.pack()
         matchOverButton.pack()
+        moreInfoButton.pack()
         ratingLabel.pack()
         confirmRatingButton["state"] = DISABLED
 
@@ -307,12 +307,11 @@ def getTips(mapName):
     global following
     charSelected = setCharacter.get() != "select character"
 
-    query = f"SELECT * FROM tips LEFT JOIN maps ON map = mapid LEFT JOIN characters ON charid = character WHERE (name(maps) = \'{mapName}\' OR name(maps) IS NULL) "
+    query = f"SELECT * FROM tips JOIN games ON gameid = game LEFT JOIN maps ON map = mapid LEFT JOIN characters ON charid = character WHERE (name(maps) = \'{mapName}\' OR name(maps) IS NULL) AND name(games) = \'{setGame.get()}\' "
     if(charSelected):
         query += f"AND (name(characters) = \'{setCharacter.get()}\' OR name(characters) IS NULL) "
     query += " ORDER BY map NULLS FIRST, character NULLS FIRST"
     if(following != None):
-        print("following is not null")
         query += ", CASE "
         for creator in following:
             print(f"creator is not null, it's {creator}" )
@@ -626,7 +625,6 @@ def nextTip():
         ratingLabel.config(text = "overall rating: " + str(round(ratingAverage[0][0], 2)))
     else:
         ratingLabel.config(text = "overall rating: No rating yet")
-    #TODO: reset the link once alec is done
     webSiteLink.set(f"")
     titleText.set("Map found: " + setMap.get() + "\nTip: " + currTip[0])
     canvas.itemconfig(currTipText, text=currTip[1])
