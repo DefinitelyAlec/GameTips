@@ -449,6 +449,7 @@ def createTip():
     
 # post the tip to the database
 def postTip():
+    global currGame
     charSelected = setCharacter.get() != "select character"
     mapSelected = setMap.get() != "select map"
     currGame = connectAndQuery(f"SELECT * FROM games WHERE name = \'{setGame.get()}\'")[0]
@@ -459,7 +460,13 @@ def postTip():
         query += ", character"
     if mapSelected:
         query += ", map"
-    query += f", game) SELECT \'{inputTitleStr.get()}\', \'{inputTipTextStr.get()}\', {loggedInUser['userid']}"
+
+    #sanitize inputs
+    titleStr = inputTitleStr.get().replace(";","")
+    titleStr = titleStr.replace("\'", "")
+    tipStr = inputTipTextStr.get().replace(";","")
+    tipStr = tipStr.replace("\'", "")
+    query += f", game) SELECT \'{titleStr}\', \'{tipStr}\', {loggedInUser['userid']}"
     if charSelected:
         query += ", charid"
     if mapSelected:
@@ -554,7 +561,10 @@ def followUser():
 
 def searchForUser():
     print("searching for that user...")
-    query = f"SELECT * FROM users where username = \'{inputUserStr.get()}\'" 
+    # sanitize
+    userStr = inputUserStr.get().replace(";","")
+    userStr = userStr.replace("\'","")
+    query = f"SELECT * FROM users where username = \'{userStr}\'" 
     result = connectAndQuery(query) # one user if this userrname exists
     try:
         uid = loggedInUser["userid"]
@@ -578,13 +588,18 @@ def searchForUser():
         print("there are no users with that name, please type it exactly.")
 
 def confirmUnfollowUser():
-    query = f"WITH id AS (SELECT user_id FROM users where username = \'{inputUserStr.get()}\') DELETE FROM followers WHERE follower = {loggedInUser[0]} AND creator IN (SELECT user_id FROM id) returning *"
+    # sanitize
+    userStr = inputUserStr.get().replace(";", "")
+    userStr = userStr.replace("\'", "")
+    query = f"WITH id AS (SELECT user_id FROM users where username = \'{userStr}\') DELETE FROM followers WHERE follower = {loggedInUser[0]} AND creator IN (SELECT user_id FROM id) returning *"
     connectAndQuery(query)
     confirmUserButton["state"] = DISABLED
     
 def confirmFollowUser():
     uid = loggedInUser["userid"]
-    query = f"INSERT INTO followers SELECT {uid}, u.user_id from users as u where u.username = \'{inputUserStr.get()}\' returning *"
+    userStr = inputUserStr.get().replace(";","")
+    userStr = userStr.replace("\'","")
+    query = f"INSERT INTO followers SELECT {uid}, u.user_id from users as u where u.username = \'{userStr}\' returning *"
     connectAndQuery(query)
     confirmUserButton["state"] = DISABLED
 
@@ -636,7 +651,10 @@ global currGame
 
 def uploadToDB():
     global currGame
-    query = f"INSERT INTO games VALUES(\'{inputGameStr.get()}\') RETURNING *"
+    # sanitize
+    gameStr = inputGameStr.get().replace(";","")
+    gameStr = gameStr.replace("\'","")
+    query = f"INSERT INTO games VALUES(\'{gameStr}\') RETURNING *"
     currGame = connectAndQuery(query)[0]
     addCharacterToGameButton["state"] = ACTIVE
     addMapToGameButton["state"] = ACTIVE
@@ -644,12 +662,18 @@ def uploadToDB():
 
 def addCharacterToGame():
     global currGame
-    query = f"INSERT INTO characters VALUES(\'{inputCharStr.get()}\', {currGame[0]}) RETURNING *"
+    # sanitize
+    charStr = inputCharStr.get().replace(";","")
+    charStr = charStr.replace("\'","")
+    query = f"INSERT INTO characters VALUES(\'{charStr}\', {currGame[0]}) RETURNING *"
     connectAndQuery(query)
 
 def addMapToGame():
     global currGame
-    query = f"INSERT INTO maps VALUES(\'{inputMapStr.get()}\', {currGame[0]}) RETURNING *"
+    # sanitize
+    mapStr = inputMapStr.get().replace(";","")
+    mapStr = mapStr.replace("\'","")
+    query = f"INSERT INTO maps VALUES(\'{mapStr}\', {currGame[0]}) RETURNING *"
     connectAndQuery(query)
 
 def editExistingGame():
