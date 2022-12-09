@@ -66,16 +66,15 @@ def setState(newState):
         moreInfoButton.pack()
 
     elif newState == "map missed":
-        matchMissedButton.pack()
         cancelSearchButton.pack()
         confirmMapButton.pack()
+        dropMap.pack()
         moreInfoButton.pack()
         if setMap.get() == "select map":
             confirmMapButton["state"] = DISABLED
         else:
             confirmMapButton["state"] = ACTIVE
 
-        dropMap.pack()
         
     elif newState == "in a match":
         nextTipButton.pack()
@@ -645,12 +644,12 @@ def uploadToDB():
 
 def addCharacterToGame():
     global currGame
-    query = f"INSERT INTO characters VALUES(\'{inputCharStr.get()}\', {currGame[0][1]}) RETURNING *"
+    query = f"INSERT INTO characters VALUES(\'{inputCharStr.get()}\', {currGame[0]}) RETURNING *"
     connectAndQuery(query)
 
 def addMapToGame():
     global currGame
-    query = f"INSERT INTO maps VALUES(\'{inputMapStr.get()}\', {currGame[0][1]}) RETURNING *"
+    query = f"INSERT INTO maps VALUES(\'{inputMapStr.get()}\', {currGame[0]}) RETURNING *"
     connectAndQuery(query)
 
 def editExistingGame():
