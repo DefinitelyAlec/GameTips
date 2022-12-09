@@ -38,7 +38,7 @@ def setState(newState):
         createTipButton.pack()
         editExistingGameButton.pack()
         uploadGameButton.pack()
-        moreInfoButton.pack()
+        #moreInfoButton.pack()
         if loggedInUser == None:
             followUserButton["state"] = DISABLED
             createTipButton["state"] = DISABLED
@@ -55,7 +55,7 @@ def setState(newState):
         dropCharacter.pack()
         saveFavoritesButton.pack()
         selectGameButton.pack()
-        moreInfoButton.pack()
+        #moreInfoButton.pack()
         confirmPreferencesButton["state"] = DISABLED
         saveFavoritesButton["state"] = DISABLED
         
@@ -63,13 +63,13 @@ def setState(newState):
         matchMissedButton.pack()
         startAutoDetectButton.pack()
         cancelSearchButton.pack()
-        moreInfoButton.pack()
+        #moreInfoButton.pack()
 
     elif newState == "map missed":
         cancelSearchButton.pack()
         confirmMapButton.pack()
         dropMap.pack()
-        moreInfoButton.pack()
+        #moreInfoButton.pack()
         if setMap.get() == "select map":
             confirmMapButton["state"] = DISABLED
         else:
@@ -81,7 +81,7 @@ def setState(newState):
         confirmRatingButton.pack()
         dropRating.pack()
         matchOverButton.pack()
-        moreInfoButton.pack()
+        #moreInfoButton.pack()
         ratingLabel.pack()
         confirmRatingButton["state"] = DISABLED
 
@@ -237,6 +237,7 @@ global currTipText
 global canvas
 global following
 global ratingAverage
+global currGame
 following = None
 ratingAverage = 0.0
 canvas = Canvas(win, width = 1000, height = 100)
@@ -638,8 +639,6 @@ def uploadGame():
     print("what game would you like people to make tips for?")
     setState("uploading game")
 
-global currGame
-
 def uploadToDB():
     global currGame
     query = f"INSERT INTO games VALUES(\'{sanitize(inputGameStr.get())}\') RETURNING *"
@@ -679,7 +678,8 @@ buttons.append(loginButton)
 
 moreInfoButton = Button(win, text = "click for our website", fg = "black",
                         command = goToSite)
-buttons.append(moreInfoButton)
+# requires full website implementation
+# buttons.append(moreInfoButton)
 
 cancelSearchButton = Button(win, text = "cancel search", fg = "red",
                         command = cancelMatch)
