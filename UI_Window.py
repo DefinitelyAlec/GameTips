@@ -240,9 +240,9 @@ global ratingAverage
 global currGame
 following = None
 ratingAverage = 0.0
-canvas = Canvas(win, width = 1000, height = 100)
+canvas = Canvas(win, width = 1000, height = 1000)
 buttons.append(canvas)
-currTipText = canvas.create_text(333, 50, text="", fill="black", font=('Helvetica 12'), width = 333)
+currTipText = canvas.create_text(333, 50, text="", fill="black", font=('Helvetica 12'), width = 500)
 
 games = [] 
 games.append("select game")
@@ -649,18 +649,20 @@ def uploadToDB():
 
 def addCharacterToGame():
     global currGame
-    query = f"INSERT INTO characters VALUES(\'{sanitize(inputCharStr.get())}\', {currGame[0]}) RETURNING *"
+    query = f"INSERT INTO characters VALUES(\'{sanitize(inputCharStr.get())}\', {currGame[1]}) RETURNING *"
     connectAndQuery(query)
 
 def addMapToGame():
     global currGame
-    query = f"INSERT INTO maps VALUES(\'{sanitize(inputMapStr.get())}\', {currGame[0]}) RETURNING *"
+    query = f"INSERT INTO maps VALUES(\'{sanitize(inputMapStr.get())}\', {currGame[1]}) RETURNING *"
     connectAndQuery(query)
 
 def editExistingGame():
     global currGame
     query = f"SELECT * FROM games WHERE name = \'{setGame.get()}\'"
-    currGame = connectAndQuery(query)
+    currGame = connectAndQuery(query)[0]
+    addCharacterToGameButton["state"] = ACTIVE
+    addMapToGameButton["state"] = ACTIVE
     setState("editing existing game")
 
 # add buttons
@@ -678,6 +680,7 @@ buttons.append(loginButton)
 
 moreInfoButton = Button(win, text = "click for our website", fg = "black",
                         command = goToSite)
+
 # requires full website implementation
 # buttons.append(moreInfoButton)
 
