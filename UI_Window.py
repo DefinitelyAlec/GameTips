@@ -609,8 +609,8 @@ def nextTip():
     currTip = None
     while len(listOfTips) > 0:
         currTip = listOfTips.pop()
-        if not currTip[7] in seenTips:
-            seenTips.append(currTip[7])
+        if not currTip[6] in seenTips:
+            #seenTips.append(currTip[6])
             break
         else:
             listOfSeenTips.append(currTip)
@@ -845,5 +845,5 @@ confirmGameButton["state"] = DISABLED
 retrieveSeenTips()
 
 win.mainloop()
-saveSeenTips()
+#saveSeenTips()
 exit(0)
